@@ -1,0 +1,337 @@
+/* PILOT Sensor Monitoring Extension Styles */
+
+/* Navigation panel enhancements */
+.sensor-monitoring-nav .x-tree-view {
+    background: #f8f9fa;
+}
+
+.sensor-monitoring-nav .x-tree-node-text {
+    font-weight: 500;
+}
+
+.sensor-monitoring-nav .x-tree-icon-leaf {
+    color: #007bff;
+}
+
+/* Vehicle status indicators in tree */
+.sensor-monitoring-nav .vehicle-online {
+    color: #28a745 !important;
+    font-weight: bold;
+}
+
+.sensor-monitoring-nav .vehicle-offline {
+    color: #dc3545 !important;
+    font-weight: normal;
+}
+
+/* Main panel styling */
+.sensor-monitoring-main {
+    background: #ffffff;
+}
+
+.sensor-monitoring-main .x-panel-header {
+    background: linear-gradient(to bottom, #f8f9fa 0%, #e9ecef 100%);
+    border-bottom: 2px solid #dee2e6;
+}
+
+/* Vehicle info panel */
+.sensor-monitoring-main .x-panel-body {
+    padding: 10px;
+}
+
+.vehicle-info-panel {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 8px;
+    margin: 5px;
+}
+
+.vehicle-info-panel h3 {
+    color: white !important;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+}
+
+/* Sensor grid enhancements */
+.sensor-grid .x-grid-header {
+    background: linear-gradient(to bottom, #f8f9fa 0%, #e9ecef 100%);
+    border-bottom: 2px solid #dee2e6;
+}
+
+.sensor-grid .x-grid-header-ct .x-column-header {
+    font-weight: 600;
+    color: #495057;
+}
+
+/* Sensor value styling */
+.sensor-value-normal {
+    color: #28a745;
+    font-weight: bold;
+    background: rgba(40, 167, 69, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.sensor-value-warning {
+    color: #ffc107;
+    font-weight: bold;
+    background: rgba(255, 193, 7, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.sensor-value-critical {
+    color: #dc3545;
+    font-weight: bold;
+    background: rgba(220, 53, 69, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    animation: pulse-critical 1.5s ease-in-out infinite alternate;
+}
+
+/* Status indicators with improved styling */
+.status-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-normal {
+    background: rgba(40, 167, 69, 0.15);
+    color: #155724;
+    border: 1px solid rgba(40, 167, 69, 0.3);
+}
+
+.status-warning {
+    background: rgba(255, 193, 7, 0.15);
+    color: #856404;
+    border: 1px solid rgba(255, 193, 7, 0.3);
+}
+
+.status-critical {
+    background: rgba(220, 53, 69, 0.15);
+    color: #721c24;
+    border: 1px solid rgba(220, 53, 69, 0.3);
+}
+
+/* Sensor type icons */
+.sensor-icon {
+    margin-right: 6px;
+    color: #6c757d;
+    width: 16px;
+    text-align: center;
+}
+
+.sensor-icon.temperature { color: #ff6b35; }
+.sensor-icon.pressure { color: #1e90ff; }
+.sensor-icon.level { color: #32cd32; }
+.sensor-icon.voltage { color: #ffd700; }
+.sensor-icon.speed { color: #ff1493; }
+
+/* Grid row styling */
+.sensor-grid .x-grid-row {
+    transition: background-color 0.2s ease;
+}
+
+.sensor-grid .x-grid-row:hover {
+    background: rgba(0, 123, 255, 0.05);
+}
+
+.sensor-grid .x-grid-row.sensor-critical {
+    background: rgba(220, 53, 69, 0.03);
+    border-left: 3px solid #dc3545;
+}
+
+.sensor-grid .x-grid-row.sensor-warning {
+    background: rgba(255, 193, 7, 0.03);
+    border-left: 3px solid #ffc107;
+}
+
+/* Threshold display styling */
+.threshold-display {
+    font-size: 11px;
+    color: #6c757d;
+    background: #f8f9fa;
+    padding: 2px 5px;
+    border-radius: 3px;
+    border: 1px solid #e9ecef;
+}
+
+/* Last update timestamp */
+.last-update {
+    font-size: 11px;
+    color: #6c757d;
+    font-style: italic;
+}
+
+/* Loading and empty state styling */
+.sensor-grid .x-grid-empty {
+    text-align: center;
+    padding: 40px;
+    color: #6c757d;
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin: 10px;
+}
+
+.sensor-grid .x-grid-empty:before {
+    content: "📊";
+    display: block;
+    font-size: 48px;
+    margin-bottom: 10px;
+    opacity: 0.5;
+}
+
+/* Refresh indicator */
+.refresh-indicator {
+    position: relative;
+}
+
+.refresh-indicator.refreshing:after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #007bff, transparent);
+    animation: loading-bar 1s ease-in-out infinite;
+}
+
+/* Animations */
+@keyframes pulse-critical {
+    from { 
+        background: rgba(220, 53, 69, 0.1);
+        box-shadow: 0 0 5px rgba(220, 53, 69, 0.3);
+    }
+    to { 
+        background: rgba(220, 53, 69, 0.2);
+        box-shadow: 0 0 10px rgba(220, 53, 69, 0.5);
+    }
+}
+
+@keyframes loading-bar {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .sensor-grid .x-column-header {
+        font-size: 12px;
+        padding: 8px 4px;
+    }
+    
+    .sensor-grid .x-grid-cell {
+        padding: 6px 4px;
+        font-size: 12px;
+    }
+    
+    .status-indicator {
+        font-size: 10px;
+        padding: 2px 6px;
+    }
+}
+
+/* Dark mode support (if PILOT supports it) */
+@media (prefers-color-scheme: dark) {
+    .sensor-monitoring-nav .x-tree-view {
+        background: #2c2c2c;
+        color: #ffffff;
+    }
+    
+    .sensor-monitoring-main {
+        background: #1e1e1e;
+    }
+    
+    .sensor-grid .x-grid-header {
+        background: linear-gradient(to bottom, #3c3c3c 0%, #2c2c2c 100%);
+        color: #ffffff;
+    }
+    
+    .sensor-grid .x-grid-row {
+        background: #1e1e1e;
+        color: #ffffff;
+    }
+    
+    .sensor-grid .x-grid-row:hover {
+        background: rgba(255, 255, 255, 0.05);
+    }
+}
+
+/* Print styles */
+@media print {
+    .sensor-monitoring-nav {
+        display: none;
+    }
+    
+    .sensor-monitoring-main {
+        width: 100% !important;
+        position: static !important;
+    }
+    
+    .sensor-grid {
+        box-shadow: none;
+        border: 1px solid #000;
+    }
+    
+    .sensor-grid .x-grid-row {
+        background: transparent !important;
+    }
+    
+    .status-critical {
+        background: #ccc !important;
+        color: #000 !important;
+    }
+}
+
+/* Custom scrollbar for webkit browsers */
+.sensor-grid .x-grid-view::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.sensor-grid .x-grid-view::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.sensor-grid .x-grid-view::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+.sensor-grid .x-grid-view::-webkit-scrollbar-thumb:hover {
+    background: #a1a1a1;
+}
+
+/* Tooltip enhancements for sensors */
+.x-tip.sensor-tooltip {
+    background: rgba(0, 0, 0, 0.9);
+    border: none;
+    border-radius: 6px;
+    color: white;
+    font-size: 12px;
+}
+
+.x-tip.sensor-tooltip .x-tip-body {
+    padding: 8px 12px;
+}
+
+/* Navigation tab styling */
+.x-tab.sensor-monitoring-tab {
+    position: relative;
+}
+
+.x-tab.sensor-monitoring-tab.x-tab-active {
+    background: linear-gradient(to bottom, #e3f2fd 0%, #bbdefb 100%);
+}
+
+.x-tab.sensor-monitoring-tab .x-tab-inner {
+    color: #1976d2;
+    font-weight: 600;
+}
