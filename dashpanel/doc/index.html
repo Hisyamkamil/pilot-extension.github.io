@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sensor Monitoring Extension - Documentation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #34495e;
+            margin-top: 30px;
+            border-left: 4px solid #3498db;
+            padding-left: 15px;
+        }
+        h3 {
+            color: #7f8c8d;
+            margin-top: 20px;
+        }
+        .feature {
+            background: #ecf0f1;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 4px solid #3498db;
+        }
+        .warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+        .info {
+            background: #d1ecf1;
+            border-left: 4px solid #17a2b8;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+        code {
+            background: #f8f9fa;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-normal { background-color: #28a745; }
+        .status-warning { background-color: #ffc107; }
+        .status-critical { background-color: #dc3545; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 PILOT Sensor Monitoring Extension</h1>
+        
+        <div class="info">
+            <strong>Version:</strong> 1.0.0<br>
+            <strong>Compatible with:</strong> PILOT GPS Platform<br>
+            <strong>Extension Type:</strong> Real-time Vehicle Sensor Monitoring<br>
+            <strong>Last Updated:</strong> February 2026
+        </div>
+
+        <h2>📋 Overview</h2>
+        <p>
+            The Sensor Monitoring Extension enhances the PILOT GPS platform by providing a dedicated panel for 
+            real-time vehicle sensor monitoring. Unlike the default tooltip-based sensor display, this extension 
+            offers a comprehensive dashboard with detailed sensor data, status indicators, and threshold monitoring.
+        </p>
+
+        <h2>✨ Key Features</h2>
+        
+        <div class="feature">
+            <h3>🚗 Vehicle Selection</h3>
+            <p>Browse and select vehicles from an organized tree structure with real-time online/offline status indicators.</p>
+        </div>
+
+        <div class="feature">
+            <h3>📊 Real-time Sensor Dashboard</h3>
+            <p>View live sensor data in a dedicated panel with automatic refresh every 5 seconds, eliminating the need for tooltips.</p>
+        </div>
+
+        <div class="feature">
+            <h3>⚠️ Smart Status Monitoring</h3>
+            <p>Intelligent status calculation with color-coded indicators:
+                <span class="status-indicator status-normal"></span>Normal,
+                <span class="status-indicator status-warning"></span>Warning,
+                <span class="status-indicator status-critical"></span>Critical
+            </p>
+        </div>
+
+        <div class="feature">
+            <h3>🎯 Threshold Management</h3>
+            <p>Configure and monitor minimum/maximum thresholds with automatic status alerts when values exceed safe ranges.</p>
+        </div>
+
+        <h2>🔌 Data Sources</h2>
+        
+        <h3>Primary Data Sources</h3>
+        <table>
+            <tr>
+                <th>Endpoint</th>
+                <th>Purpose</th>
+                <th>Parameters</th>
+            </tr>
+            <tr>
+                <td><code>/ax/tree.php</code></td>
+                <td>Vehicle hierarchy and status</td>
+                <td><code>vehs=1, state=1</code></td>
+            </tr>
+            <tr>
+                <td><code>/ax/sensors.php</code></td>
+                <td>Real-time sensor data</td>
+                <td><code>vehicle_id, type=realtime</code></td>
+            </tr>
+        </table>
+
+        <div class="info">
+            <strong>Fallback Behavior:</strong> When API endpoints are unavailable, the extension gracefully falls back to 
+            mock sensor data for demonstration purposes, ensuring continuous functionality during development or API outages.
+        </div>
+
+        <h2>📈 Supported Sensor Types</h2>
+        
+        <table>
+            <tr>
+                <th>Sensor Type</th>
+                <th>Icon</th>
+                <th>Typical Unit</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td>Temperature</td>
+                <td>🌡️</td>
+                <td>°C, °F</td>
+                <td>Engine temperature, coolant temperature</td>
+            </tr>
+            <tr>
+                <td>Pressure</td>
+                <td>⚡</td>
+                <td>PSI, Bar</td>
+                <td>Oil pressure, tire pressure</td>
+            </tr>
+            <tr>
+                <td>Level</td>
+                <td>🔋</td>
+                <td>%, Liters</td>
+                <td>Fuel level, battery level</td>
+            </tr>
+            <tr>
+                <td>Voltage</td>
+                <td>⚡</td>
+                <td>V</td>
+                <td>Battery voltage, system voltage</td>
+            </tr>
+            <tr>
+                <td>Speed</td>
+                <td>🏃</td>
+                <td>km/h, mph</td>
+                <td>Vehicle speed, engine RPM</td>
+            </tr>
+        </table>
+
+        <h2>⚙️ Configuration</h2>
+        
+        <h3>Extension Installation</h3>
+        <ol>
+            <li>Host the extension files on your web server</li>
+            <li>Register the extension in PILOT admin panel with the base URL</li>
+            <li>Activate the extension for desired contracts/accounts</li>
+            <li>The extension will appear as a new navigation tab "Sensor Monitor"</li>
+        </ol>
+
+        <h3>Sensor Thresholds</h3>
+        <p>
+            Sensor thresholds are configured through the PILOT API response. The extension automatically calculates 
+            status based on these thresholds:
+        </p>
+        <ul>
+            <li><strong>Critical:</strong> Value exceeds min/max thresholds</li>
+            <li><strong>Warning:</strong> Value within 10% of threshold limits</li>
+            <li><strong>Normal:</strong> Value within safe operating range</li>
+        </ul>
+
+        <h2>🎮 User Interface</h2>
+        
+        <h3>Navigation Panel (Left)</h3>
+        <p>
+            The navigation panel displays a hierarchical tree of vehicle groups and individual vehicles. 
+            Each vehicle shows its current online/offline status with color-coded indicators.
+        </p>
+
+        <h3>Main Dashboard (Center)</h3>
+        <p>
+            When a vehicle is selected, the main panel displays:
+        </p>
+        <ul>
+            <li><strong>Vehicle Info:</strong> Selected vehicle name and ID</li>
+            <li><strong>Sensor Grid:</strong> Real-time sensor data with columns for name, type, current value, status, thresholds, and last update</li>
+            <li><strong>Auto Refresh:</strong> Data updates every 5 seconds automatically</li>
+        </ul>
+
+        <h2>🔄 Real-time Updates</h2>
+        
+        <div class="info">
+            <p>
+                The extension implements automatic data refresh with a 5-second interval when a vehicle is selected. 
+                This ensures sensor values are always current without manual refresh actions.
+            </p>
+        </div>
+
+        <div class="warning">
+            <strong>Performance Note:</strong> Real-time updates are automatically stopped when no vehicle is selected 
+            or when the extension panel is not active, optimizing resource usage.
+        </div>
+
+        <h2>🛠️ Technical Implementation</h2>
+        
+        <h3>Architecture</h3>
+        <ul>
+            <li><strong>Framework:</strong> Ext JS 7.7+ (provided by PILOT platform)</li>
+            <li><strong>Integration:</strong> PILOT Extension API via global <code>skeleton</code> object</li>
+            <li><strong>Pattern:</strong> Full UI Extension (Navigation tab + Main panel)</li>
+            <li><strong>Data Binding:</strong> Ext JS stores with automatic model binding</li>
+        </ul>
+
+        <h3>File Structure</h3>
+        <ul>
+            <li><code>Module.js</code> - Main extension entry point and initialization</li>
+            <li><code>view/Navigation.js</code> - Left navigation panel component</li>
+            <li><code>view/MainPanel.js</code> - Main sensor dashboard component</li>
+            <li><code>doc/index.html</code> - This documentation file</li>
+            <li><code>style.css</code> - Optional styling enhancements</li>
+        </ul>
+
+        <h2>🚀 Benefits Over Default Tooltips</h2>
+        
+        <div class="feature">
+            <p><strong>Enhanced Visibility:</strong> Large, dedicated panel instead of small tooltips</p>
+        </div>
+        
+        <div class="feature">
+            <p><strong>Comprehensive Data:</strong> Shows all sensor data simultaneously, not one at a time</p>
+        </div>
+        
+        <div class="feature">
+            <p><strong>Status Indicators:</strong> Clear visual status with color coding and icons</p>
+        </div>
+        
+        <div class="feature">
+            <p><strong>Threshold Monitoring:</strong> Displays threshold values and automatic status calculation</p>
+        </div>
+        
+        <div class="feature">
+            <p><strong>Historical Context:</strong> Shows last update timestamps for each sensor</p>
+        </div>
+
+        <h2>🔍 Troubleshooting</h2>
+        
+        <h3>Common Issues</h3>
+        <table>
+            <tr>
+                <th>Issue</th>
+                <th>Possible Cause</th>
+                <th>Solution</th>
+            </tr>
+            <tr>
+                <td>No vehicles showing</td>
+                <td>API connection issue</td>
+                <td>Check PILOT API connectivity and permissions</td>
+            </tr>
+            <tr>
+                <td>Sensors show mock data</td>
+                <td>Sensor API endpoint unavailable</td>
+                <td>Verify <code>/ax/sensors.php</code> endpoint configuration</td>
+            </tr>
+            <tr>
+                <td>Extension tab not appearing</td>
+                <td>Extension not activated</td>
+                <td>Check extension activation in PILOT admin panel</td>
+            </tr>
+        </table>
+
+        <div class="warning">
+            <strong>Note:</strong> This extension requires PILOT GPS platform version 7.7 or higher and appropriate 
+            user permissions to access vehicle and sensor data.
+        </div>
+
+        <footer style="margin-top: 40px; text-align: center; color: #7f8c8d; border-top: 1px solid #ecf0f1; padding-top: 20px;">
+            <p>PILOT Sensor Monitoring Extension v1.0.0 | Compatible with PILOT GPS Platform</p>
+        </footer>
+    </div>
+</body>
+</html>
