@@ -186,7 +186,16 @@ Ext.define('Store.dashpanel.view.MainPanel', {
         
         console.log('🔄 Loading sensor data for vehicle ID:', me.currentVehicleId);
         
-        // Load real-time sensor data from PILOT v3 API with authentication
+        // Try v3 API first
+        me.tryV3API();
+    },
+    
+    tryV3API: function() {
+        var me = this;
+        
+        console.log('Trying PILOT v3 API...');
+        
+        // Try PILOT v3 API first
         Ext.Ajax.request({
             url: '/api/v3/vehicles/status',
             headers: {
@@ -196,28 +205,195 @@ Ext.define('Store.dashpanel.view.MainPanel', {
                 agent_id: me.currentVehicleId
             },
             success: function(response) {
-                console.log('PILOT v3 API Response:', response.responseText);
+                console.log('✅ v3 API Success:', response.responseText);
                 try {
                     var data = Ext.decode(response.responseText);
                     if (data.code === 0 && data.data && data.data.length > 0) {
                         console.log('Processing real sensor data from v3 API');
                         me.processRealSensorData(data.data[0]);
                     } else {
-                        console.warn('No vehicle data received from v3 API, response:', data);
-                        me.loadMockSensorData();
+                        console.warn('v3 API returned no data, trying backend API');
+                        me.tryBackendAPI();
                     }
                 } catch (e) {
-                    console.error('Error parsing vehicle status data:', e, 'Response:', response.responseText);
-                    // Continue with mock data for demonstration
-                    me.loadMockSensorData();
+                    console.error('v3 API parse error:', e);
+                    me.tryBackendAPI();
                 }
             },
             failure: function(response) {
-                console.error('Failed to load vehicle status from PILOT v3 API. Status:', response.status, 'Response:', response.responseText);
-                // Load mock data for demonstration purposes
-                me.loadMockSensorData();
+                console.warn('❌ v3 API failed (Status:', response.status, '), trying backend API...');
+                me.tryBackendAPI();
             }
         });
+    },
+    
+    tryBackendAPI: function() {
+        var me = this;
+        
+        console.log('Trying backend current_data API...');
+        
+        // Fallback to backend current data API (no token required)
+        Ext.Ajax.request({
+            url: 'https://dev-telematics.mst.co.id/backend/ax/current_data.php',
+            params: {
+                vehicle_id: me.currentVehicleId
+            },
+            success: function(response) {
+                console.log('✅ Backend API Success:', response.responseText);
+                try {
+                    var data = Ext.decode(response.responseText);
+                    me.processBackendSensorData(data);
+                } catch (e) {
+                    console.error('❌ Backend API parse error:', e, 'Response:', response.responseText);
+                    me.showNoDataMessage();
+                }
+            },
+            failure: function(response) {
+                console.error('❌ Backend API failed. Status:', response.status, 'Response:', response.responseText);
+                me.showNoDataMessage();
+            }
+        });
+    },
+    
+    showNoDataMessage: function() {
+        var me = this;
+        
+        console.error('💥 All APIs failed - no sensor data available');
+        
+        // Show empty grid with error message
+        me.sensorGrid.getStore().loadData([{
+            sensor_name: 'No Data Available',
+            sensor_type: 'error',
+            current_value: 'All API endpoints failed',
+            unit: '',
+            status: 'critical',
+            last_update: new Date(),
+            min_threshold: null,
+            max_threshold: null
+        }]);
+    },
+    
+    processBackendSensorData: function(data) {
+        var me = this;
+        var sensorData = [];
+        
+        console.log('Processing backend API sensor data:', data);
+        
+        // Process backend API response - adapt based on actual response structure
+        if (data) {
+            // Add vehicle basic data if available
+            if (data.speed !== undefined) {
+                sensorData.push({
+                    sensor_name: 'Vehicle Speed',
+                    sensor_type: 'speed',
+                    current_value: data.speed,
+                    unit: 'km/h',
+                    status: data.speed > 80 ? 'warning' : 'normal',
+                    last_update: new Date(),
+                    min_threshold: null,
+                    max_threshold: 80
+                });
+            }
+            
+            if (data.engine_status !== undefined || data.firing !== undefined) {
+                var engineOn = data.engine_status || data.firing;
+                sensorData.push({
+                    sensor_name: 'Engine Status',
+                    sensor_type: 'engine',
+                    current_value: engineOn ? 'ON' : 'OFF',
+                    unit: '',
+                    status: 'normal',
+                    last_update: new Date(),
+                    min_threshold: null,
+                    max_threshold: null
+                });
+            }
+            
+            // Process sensors array if exists
+            if (Ext.isArray(data.sensors)) {
+                Ext.each(data.sensors, function(sensor) {
+                    var sensorType = me.determineSensorType(sensor.name);
+                    var status = me.calculateSensorStatusFromValue(sensor.value || sensor.dig_value, sensorType);
+                    
+                    sensorData.push({
+                        sensor_name: sensor.name || 'Unknown Sensor',
+                        sensor_type: sensorType,
+                        current_value: sensor.value || sensor.dig_value,
+                        unit: me.extractUnit(sensor.hum_value) || sensor.unit || '',
+                        status: status,
+                        last_update: new Date(sensor.timestamp ? sensor.timestamp * 1000 : Date.now()),
+                        min_threshold: null,
+                        max_threshold: null,
+                        raw_value: sensor.raw_value,
+                        sensor_id: sensor.id
+                    });
+                });
+            }
+            
+            // Process other sensor data fields from backend API
+            Ext.Object.each(data, function(key, value) {
+                if (key !== 'sensors' && key !== 'speed' && key !== 'engine_status' && key !== 'firing' &&
+                    typeof value === 'number' && !isNaN(value)) {
+                    
+                    var sensorType = me.determineSensorType(key);
+                    var status = me.calculateSensorStatusFromValue(value, sensorType);
+                    
+                    sensorData.push({
+                        sensor_name: me.formatSensorName(key),
+                        sensor_type: sensorType,
+                        current_value: value,
+                        unit: me.getSensorUnit(key, sensorType),
+                        status: status,
+                        last_update: new Date(),
+                        min_threshold: null,
+                        max_threshold: null
+                    });
+                }
+            });
+        }
+        
+        if (sensorData.length === 0) {
+            sensorData.push({
+                sensor_name: 'No Sensor Data',
+                sensor_type: 'info',
+                current_value: 'No sensors found in API response',
+                unit: '',
+                status: 'warning',
+                last_update: new Date(),
+                min_threshold: null,
+                max_threshold: null
+            });
+        }
+        
+        console.log('✅ Successfully loaded real sensor data from backend. Count:', sensorData.length);
+        me.sensorGrid.getStore().loadData(sensorData);
+    },
+    
+    // Helper to format sensor names from API keys
+    formatSensorName: function(key) {
+        return key.replace(/_/g, ' ').replace(/\b\w/g, function(l) { return l.toUpperCase(); });
+    },
+    
+    // Helper to get appropriate units for sensor types
+    getSensorUnit: function(key, sensorType) {
+        var keyLower = key.toLowerCase();
+        
+        if (keyLower.includes('temp')) return '°C';
+        if (keyLower.includes('voltage') || keyLower.includes('volt')) return 'V';
+        if (keyLower.includes('pressure')) return 'PSI';
+        if (keyLower.includes('fuel') || keyLower.includes('level')) return '%';
+        if (keyLower.includes('speed')) return 'km/h';
+        if (keyLower.includes('weight') || keyLower.includes('load')) return 'kg';
+        
+        switch (sensorType) {
+            case 'temperature': return '°C';
+            case 'voltage': return 'V';
+            case 'pressure': return 'PSI';
+            case 'level': return '%';
+            case 'speed': return 'km/h';
+            case 'weight': return 'kg';
+            default: return '';
+        }
     },
     
     processRealSensorData: function(vehicleData) {
@@ -336,91 +512,6 @@ Ext.define('Store.dashpanel.view.MainPanel', {
             default:
                 return 'normal';
         }
-    },
-    
-    // Mock data for demonstration when API is not available
-    loadMockSensorData: function() {
-        var me = this;
-        
-        console.warn('🚨 LOADING MOCK SENSOR DATA - Real API failed or unavailable');
-        console.warn('Current vehicle ID:', me.currentVehicleId);
-        
-        var mockSensors = [
-            {
-                sensor_name: 'Engine Temperature',
-                sensor_type: 'temperature',
-                current_value: 85.5,
-                unit: '°C',
-                min_threshold: 70,
-                max_threshold: 95,
-                last_update: new Date()
-            },
-            {
-                sensor_name: 'Oil Pressure',
-                sensor_type: 'pressure',
-                current_value: 45.2,
-                unit: 'PSI',
-                min_threshold: 30,
-                max_threshold: 60,
-                last_update: new Date()
-            },
-            {
-                sensor_name: 'Fuel Level',
-                sensor_type: 'level',
-                current_value: 78.5,
-                unit: '%',
-                min_threshold: 10,
-                max_threshold: 100,
-                last_update: new Date()
-            },
-            {
-                sensor_name: 'Battery Voltage',
-                sensor_type: 'voltage',
-                current_value: 12.4,
-                unit: 'V',
-                min_threshold: 11.5,
-                max_threshold: 14.5,
-                last_update: new Date()
-            },
-            {
-                sensor_name: 'Speed',
-                sensor_type: 'speed',
-                current_value: 45,
-                unit: 'km/h',
-                min_threshold: 0,
-                max_threshold: 120,
-                last_update: new Date()
-            }
-        ];
-        
-        // Add random variation to simulate real-time data
-        Ext.each(mockSensors, function(sensor) {
-            var variation = (Math.random() - 0.5) * 2; // ±1 unit variation
-            sensor.current_value = Math.round((sensor.current_value + variation) * 10) / 10;
-            sensor.status = me.calculateSensorStatus(sensor.current_value, sensor.min_threshold, sensor.max_threshold);
-        });
-        
-        console.warn('📊 Mock sensor data loaded. Count:', mockSensors.length);
-        me.sensorGrid.getStore().loadData(mockSensors);
-    },
-    
-    calculateSensorStatus: function(value, minThreshold, maxThreshold) {
-        if (minThreshold !== null && value < minThreshold) {
-            return 'critical';
-        }
-        if (maxThreshold !== null && value > maxThreshold) {
-            return 'critical';
-        }
-        
-        // Warning zones (within 10% of thresholds)
-        if (minThreshold !== null && value < minThreshold * 1.1) {
-            return 'warning';
-        }
-        if (maxThreshold !== null && value > maxThreshold * 0.9) {
-            return 'warning';
-        }
-        
-        return 'normal';
     },
     
     getSensorIcon: function(sensorType) {
