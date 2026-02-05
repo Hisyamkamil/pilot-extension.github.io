@@ -233,11 +233,9 @@ Ext.define('Store.dashpanel.view.MainPanel', {
         console.log('Trying backend current_data API...');
         
         // Fallback to backend current data API (no token required)
+        // API returns all vehicles, we filter by ID in processBackendSensorData
         Ext.Ajax.request({
             url: 'https://dev-telematics.mst.co.id/backend/ax/current_data.php',
-            params: {
-                vehicle_id: me.currentVehicleId
-            },
             success: function(response) {
                 console.log('✅ Backend API Success:', response.responseText);
                 try {
@@ -279,90 +277,102 @@ Ext.define('Store.dashpanel.view.MainPanel', {
         
         console.log('Processing backend API sensor data:', data);
         
-        // Process backend API response - adapt based on actual response structure
-        if (data) {
-            // Add vehicle basic data if available
-            if (data.speed !== undefined) {
+        // Backend API returns: {c: 0, objects: [...]}
+        if (data && data.c === 0 && Ext.isArray(data.objects)) {
+            // Find the vehicle by current vehicle ID
+            var vehicle = null;
+            Ext.each(data.objects, function(obj) {
+                if (obj.id == me.currentVehicleId || obj.veh_id == me.currentVehicleId) {
+                    vehicle = obj;
+                    return false; // break loop
+                }
+            });
+            
+            if (!vehicle) {
+                console.warn('Vehicle ID', me.currentVehicleId, 'not found in API response');
+                me.showNoDataMessage();
+                return;
+            }
+            
+            console.log('Found vehicle data:', vehicle);
+            
+            // Add basic vehicle data
+            if (vehicle.last_event && vehicle.last_event.speed !== undefined) {
                 sensorData.push({
                     sensor_name: 'Vehicle Speed',
                     sensor_type: 'speed',
-                    current_value: data.speed,
+                    current_value: vehicle.last_event.speed,
                     unit: 'km/h',
-                    status: data.speed > 80 ? 'warning' : 'normal',
-                    last_update: new Date(),
+                    status: vehicle.last_event.speed > 80 ? 'warning' : 'normal',
+                    last_update: new Date(vehicle.unixtimestamp * 1000),
                     min_threshold: null,
                     max_threshold: 80
                 });
             }
             
-            if (data.engine_status !== undefined || data.firing !== undefined) {
-                var engineOn = data.engine_status || data.firing;
+            // Add engine status (firing)
+            if (vehicle.firing !== undefined) {
                 sensorData.push({
                     sensor_name: 'Engine Status',
                     sensor_type: 'engine',
-                    current_value: engineOn ? 'ON' : 'OFF',
+                    current_value: vehicle.firing ? 'ON' : 'OFF',
                     unit: '',
                     status: 'normal',
-                    last_update: new Date(),
+                    last_update: new Date(vehicle.unixtimestamp * 1000),
                     min_threshold: null,
                     max_threshold: null
                 });
             }
             
-            // Process sensors array if exists
-            if (Ext.isArray(data.sensors)) {
-                Ext.each(data.sensors, function(sensor) {
-                    var sensorType = me.determineSensorType(sensor.name);
-                    var status = me.calculateSensorStatusFromValue(sensor.value || sensor.dig_value, sensorType);
-                    
-                    sensorData.push({
-                        sensor_name: sensor.name || 'Unknown Sensor',
-                        sensor_type: sensorType,
-                        current_value: sensor.value || sensor.dig_value,
-                        unit: me.extractUnit(sensor.hum_value) || sensor.unit || '',
-                        status: status,
-                        last_update: new Date(sensor.timestamp ? sensor.timestamp * 1000 : Date.now()),
-                        min_threshold: null,
-                        max_threshold: null,
-                        raw_value: sensor.raw_value,
-                        sensor_id: sensor.id
-                    });
+            // Add GPS position
+            if (vehicle.lat && vehicle.lon) {
+                sensorData.push({
+                    sensor_name: 'GPS Position',
+                    sensor_type: 'location',
+                    current_value: parseFloat(vehicle.lat).toFixed(6) + ', ' + parseFloat(vehicle.lon).toFixed(6),
+                    unit: 'lat,lon',
+                    status: 'normal',
+                    last_update: new Date(vehicle.unixtimestamp * 1000),
+                    min_threshold: null,
+                    max_threshold: null
                 });
             }
             
-            // Process other sensor data fields from backend API
-            Ext.Object.each(data, function(key, value) {
-                if (key !== 'sensors' && key !== 'speed' && key !== 'engine_status' && key !== 'firing' &&
-                    typeof value === 'number' && !isNaN(value)) {
-                    
-                    var sensorType = me.determineSensorType(key);
-                    var status = me.calculateSensorStatusFromValue(value, sensorType);
-                    
-                    sensorData.push({
-                        sensor_name: me.formatSensorName(key),
-                        sensor_type: sensorType,
-                        current_value: value,
-                        unit: me.getSensorUnit(key, sensorType),
-                        status: status,
-                        last_update: new Date(),
-                        min_threshold: null,
-                        max_threshold: null
-                    });
-                }
-            });
+            // Process sensors object - format: "sensorName": "4 %|timestamp|id|value|source|raw|flag|type"
+            if (vehicle.sensors && typeof vehicle.sensors === 'object') {
+                Ext.Object.each(vehicle.sensors, function(sensorName, sensorData) {
+                    // Parse pipe-separated sensor string: "4 %|1769491575|1539853|4|Auto Can|4|1|3"
+                    var parts = sensorData.split('|');
+                    if (parts.length >= 4) {
+                        var humanValue = parts[0]; // "4 %"
+                        var timestamp = parseInt(parts[1]); // 1769491575
+                        var digitalValue = parseFloat(parts[3]); // 4
+                        
+                        var sensorType = me.determineSensorType(sensorName);
+                        var status = me.calculateSensorStatusFromValue(digitalValue, sensorType);
+                        var unit = me.extractUnit(humanValue);
+                        
+                        sensorData.push({
+                            sensor_name: sensorName,
+                            sensor_type: sensorType,
+                            current_value: digitalValue,
+                            unit: unit,
+                            status: status,
+                            last_update: new Date(timestamp * 1000),
+                            min_threshold: null,
+                            max_threshold: null,
+                            raw_value: parts[5] || '',
+                            human_value: humanValue
+                        });
+                    }
+                });
+            }
         }
         
         if (sensorData.length === 0) {
-            sensorData.push({
-                sensor_name: 'No Sensor Data',
-                sensor_type: 'info',
-                current_value: 'No sensors found in API response',
-                unit: '',
-                status: 'warning',
-                last_update: new Date(),
-                min_threshold: null,
-                max_threshold: null
-            });
+            console.warn('No sensor data found for vehicle ID:', me.currentVehicleId);
+            me.showNoDataMessage();
+            return;
         }
         
         console.log('✅ Successfully loaded real sensor data from backend. Count:', sensorData.length);
