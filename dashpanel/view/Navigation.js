@@ -1,8 +1,8 @@
 Ext.define('Store.dashpanel.view.Navigation', {
     extend: 'Ext.panel.Panel',
-    alias: 'widget.sensormonitoringnav',
+    alias: 'widget.dashpanelnav',
     
-    title: 'Sensor Monitor',
+    title: 'Dashboard Panel',
     iconCls: 'fa fa-tachometer-alt',
     iconAlign: 'top',
     layout: 'fit',
@@ -10,7 +10,7 @@ Ext.define('Store.dashpanel.view.Navigation', {
     initComponent: function() {
         var me = this;
         
-        // Create vehicle tree for sensor monitoring
+        // Create vehicle tree for dashboard panel
         me.vehicleTree = Ext.create('Ext.tree.Panel', {
             title: 'Vehicles',
             rootVisible: false,
@@ -111,13 +111,64 @@ Ext.define('Store.dashpanel.view.Navigation', {
                     
                 } catch (e) {
                     console.error('Error parsing vehicle data:', e);
-                    Ext.Msg.alert('Error', 'Failed to load vehicle data');
+                    console.warn('Using fallback data due to parsing error');
+                    me.loadFallbackVehicleData();
                 }
             },
             failure: function() {
-                console.error('Failed to load vehicle data from PILOT API');
-                Ext.Msg.alert('Error', 'Failed to connect to PILOT API');
+                console.warn('Failed to load vehicle data from PILOT API, using fallback data');
+                // Load fallback mock data for demonstration when API is unavailable
+                me.loadFallbackVehicleData();
             }
+        });
+    },
+    
+    // Fallback mock data for demonstration when PILOT API is unavailable
+    loadFallbackVehicleData: function() {
+        var me = this;
+        
+        var fallbackData = [{
+            text: 'Fleet Group 1',
+            expanded: true,
+            leaf: false,
+            children: [{
+                text: 'Truck-001',
+                leaf: true,
+                vehicle_id: 'demo_001',
+                status: 'online',
+                iconCls: 'fa fa-truck'
+            }, {
+                text: 'Truck-002',
+                leaf: true,
+                vehicle_id: 'demo_002',
+                status: 'offline',
+                iconCls: 'fa fa-truck'
+            }]
+        }, {
+            text: 'Fleet Group 2',
+            expanded: true,
+            leaf: false,
+            children: [{
+                text: 'Van-003',
+                leaf: true,
+                vehicle_id: 'demo_003',
+                status: 'online',
+                iconCls: 'fa fa-car'
+            }]
+        }];
+        
+        // Update tree store with fallback data
+        me.vehicleTree.getStore().setRootNode({
+            expanded: true,
+            children: fallbackData
+        });
+        
+        // Show info message that this is demo data
+        Ext.Msg.show({
+            title: 'Demo Mode',
+            message: 'Using demonstration vehicle data. Connect to PILOT API for real data.',
+            buttons: Ext.Msg.OK,
+            icon: Ext.Msg.INFO
         });
     }
 });
