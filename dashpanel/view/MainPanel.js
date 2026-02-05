@@ -284,31 +284,6 @@ Ext.define('Store.dashpanel.view.MainPanel', {
         });
     },
     
-    tryExternalBackendAPI: function() {
-        var me = this;
-        
-        console.log('Trying external backend API...');
-        
-        Ext.Ajax.request({
-            url: 'https://dev-telematics.mst.co.id/backend/ax/current_data.php',
-            success: function(response) {
-                console.log('✅ External Backend API Success:', response.responseText);
-                try {
-                    var data = Ext.decode(response.responseText);
-                    me.processBackendSensorData(data);
-                } catch (e) {
-                    console.error('❌ External Backend API parse error:', e, 'Response:', response.responseText);
-                    me.showNoDataMessage();
-                }
-            },
-            failure: function(response) {
-                console.error('❌ External Backend API failed. Status:', response.status, 'Response:', response.responseText);
-                console.error('This might be a CORS issue or authentication required from external domains');
-                me.showNoDataMessage();
-            }
-        });
-    },
-    
     showNoDataMessage: function() {
         var me = this;
         
@@ -329,32 +304,43 @@ Ext.define('Store.dashpanel.view.MainPanel', {
     
     processBackendSensorData: function(data) {
         var me = this;
-        var sensorData = [];
+        var sensorDataArray = [];
         
-        console.log('Processing backend API sensor data:', data);
+        console.log('🔄 Processing backend API sensor data...');
+        console.log('📊 Full API Response:', data);
+        console.log('🔍 Response type:', typeof data);
+        console.log('🔍 Response.c:', data ? data.c : 'undefined');
+        console.log('🔍 Response.objects:', data && data.objects ? 'exists (' + data.objects.length + ' items)' : 'missing');
         
         // Backend API returns: {c: 0, objects: [...]}
         if (data && data.c === 0 && Ext.isArray(data.objects)) {
+            console.log('🔍 API Response structure valid. Objects count:', data.objects.length);
+            console.log('🔍 Looking for vehicle ID:', me.currentVehicleId, '(type:', typeof me.currentVehicleId, ')');
+            
             // Find the vehicle by current vehicle ID
             var vehicle = null;
-            Ext.each(data.objects, function(obj) {
+            Ext.each(data.objects, function(obj, index) {
+                console.log('🔍 Checking vehicle', index + ':', 'id=' + obj.id, 'veh_id=' + obj.veh_id, 'name=' + obj.name);
                 if (obj.id == me.currentVehicleId || obj.veh_id == me.currentVehicleId) {
+                    console.log('✅ FOUND MATCHING VEHICLE:', obj.name);
                     vehicle = obj;
                     return false; // break loop
                 }
             });
             
             if (!vehicle) {
-                console.warn('Vehicle ID', me.currentVehicleId, 'not found in API response');
+                console.error('❌ Vehicle ID', me.currentVehicleId, 'NOT FOUND in API response');
+                console.error('Available vehicle IDs:', data.objects.map(function(obj) { return obj.id + ' (' + obj.name + ')'; }));
                 me.showNoDataMessage();
                 return;
             }
             
-            console.log('Found vehicle data:', vehicle);
+            console.log('✅ Found vehicle data for', vehicle.name + ':', vehicle);
+            console.log('✅ Sensors available:', Object.keys(vehicle.sensors || {}).length);
             
             // Add basic vehicle data
             if (vehicle.last_event && vehicle.last_event.speed !== undefined) {
-                sensorData.push({
+                sensorDataArray.push({
                     sensor_name: 'Vehicle Speed',
                     sensor_type: 'speed',
                     current_value: vehicle.last_event.speed,
@@ -368,7 +354,7 @@ Ext.define('Store.dashpanel.view.MainPanel', {
             
             // Add engine status (firing)
             if (vehicle.firing !== undefined) {
-                sensorData.push({
+                sensorDataArray.push({
                     sensor_name: 'Engine Status',
                     sensor_type: 'engine',
                     current_value: vehicle.firing ? 'ON' : 'OFF',
@@ -382,7 +368,7 @@ Ext.define('Store.dashpanel.view.MainPanel', {
             
             // Add GPS position
             if (vehicle.lat && vehicle.lon) {
-                sensorData.push({
+                sensorDataArray.push({
                     sensor_name: 'GPS Position',
                     sensor_type: 'location',
                     current_value: parseFloat(vehicle.lat).toFixed(6) + ', ' + parseFloat(vehicle.lon).toFixed(6),
@@ -396,9 +382,9 @@ Ext.define('Store.dashpanel.view.MainPanel', {
             
             // Process sensors object - format: "sensorName": "4 %|timestamp|id|value|source|raw|flag|type"
             if (vehicle.sensors && typeof vehicle.sensors === 'object') {
-                Ext.Object.each(vehicle.sensors, function(sensorName, sensorData) {
+                Ext.Object.each(vehicle.sensors, function(sensorName, sensorValue) {
                     // Parse pipe-separated sensor string: "4 %|1769491575|1539853|4|Auto Can|4|1|3"
-                    var parts = sensorData.split('|');
+                    var parts = sensorValue.split('|');
                     if (parts.length >= 4) {
                         var humanValue = parts[0]; // "4 %"
                         var timestamp = parseInt(parts[1]); // 1769491575
@@ -408,7 +394,7 @@ Ext.define('Store.dashpanel.view.MainPanel', {
                         var status = me.calculateSensorStatusFromValue(digitalValue, sensorType);
                         var unit = me.extractUnit(humanValue);
                         
-                        sensorData.push({
+                        sensorDataArray.push({
                             sensor_name: sensorName,
                             sensor_type: sensorType,
                             current_value: digitalValue,
@@ -425,14 +411,14 @@ Ext.define('Store.dashpanel.view.MainPanel', {
             }
         }
         
-        if (sensorData.length === 0) {
+        if (sensorDataArray.length === 0) {
             console.warn('No sensor data found for vehicle ID:', me.currentVehicleId);
             me.showNoDataMessage();
             return;
         }
         
-        console.log('✅ Successfully loaded real sensor data from backend. Count:', sensorData.length);
-        me.sensorGrid.getStore().loadData(sensorData);
+        console.log('✅ Successfully loaded real sensor data from backend. Count:', sensorDataArray.length);
+        me.sensorGrid.getStore().loadData(sensorDataArray);
     },
     
     // Helper to format sensor names from API keys
@@ -464,7 +450,7 @@ Ext.define('Store.dashpanel.view.MainPanel', {
     
     processRealSensorData: function(vehicleData) {
         var me = this;
-        var sensorData = [];
+        var sensorDataArray = [];
         
         // Process real sensor data from PILOT v3 API response
         if (vehicleData && Ext.isArray(vehicleData.sensors)) {
@@ -475,7 +461,7 @@ Ext.define('Store.dashpanel.view.MainPanel', {
                 // Calculate status based on sensor value patterns (since API doesn't provide thresholds)
                 var status = me.calculateSensorStatusFromValue(sensor.dig_value, sensorType);
                 
-                sensorData.push({
+                sensorDataArray.push({
                     sensor_name: sensor.name || 'Unknown Sensor',
                     sensor_type: sensorType,
                     current_value: sensor.dig_value,
@@ -494,7 +480,7 @@ Ext.define('Store.dashpanel.view.MainPanel', {
         if (vehicleData) {
             // Add speed as a sensor
             if (vehicleData.speed !== undefined) {
-                sensorData.push({
+                sensorDataArray.push({
                     sensor_name: 'Vehicle Speed',
                     sensor_type: 'speed',
                     current_value: vehicleData.speed,
@@ -508,7 +494,7 @@ Ext.define('Store.dashpanel.view.MainPanel', {
             
             // Add engine status
             if (vehicleData.firing !== undefined) {
-                sensorData.push({
+                sensorDataArray.push({
                     sensor_name: 'Engine Status',
                     sensor_type: 'engine',
                     current_value: vehicleData.firing,
@@ -521,8 +507,8 @@ Ext.define('Store.dashpanel.view.MainPanel', {
             }
         }
         
-        console.log('Successfully loaded real sensor data. Count:', sensorData.length);
-        me.sensorGrid.getStore().loadData(sensorData);
+        console.log('Successfully loaded real sensor data. Count:', sensorDataArray.length);
+        me.sensorGrid.getStore().loadData(sensorDataArray);
     },
     
     // Helper method to determine sensor type from name
