@@ -233,9 +233,13 @@ Ext.define('Store.dashpanel.view.MainPanel', {
         console.log('Trying backend current_data API...');
         
         // Fallback to backend current data API (no token required)
-        // API returns all vehicles, we filter by ID in processBackendSensorData
+        // Try relative URL first (for internal PILOT calls), then external if needed
+        var backendUrl = '/backend/ax/current_data.php';
+        
+        console.log('Trying backend API:', backendUrl);
+        
         Ext.Ajax.request({
-            url: 'https://dev-telematics.mst.co.id/backend/ax/current_data.php',
+            url: backendUrl,
             success: function(response) {
                 console.log('✅ Backend API Success:', response.responseText);
                 try {
@@ -243,11 +247,63 @@ Ext.define('Store.dashpanel.view.MainPanel', {
                     me.processBackendSensorData(data);
                 } catch (e) {
                     console.error('❌ Backend API parse error:', e, 'Response:', response.responseText);
+                    // Try external URL if relative fails
+                    me.tryExternalBackendAPI();
+                }
+            },
+            failure: function(response) {
+                console.warn('❌ Internal backend API failed. Status:', response.status, 'Trying external URL...');
+                // Try external URL if relative fails
+                me.tryExternalBackendAPI();
+            }
+        });
+    },
+    
+    tryExternalBackendAPI: function() {
+        var me = this;
+        
+        console.log('Trying external backend API...');
+        
+        Ext.Ajax.request({
+            url: 'https://dev-telematics.mst.co.id/backend/ax/current_data.php',
+            success: function(response) {
+                console.log('✅ External Backend API Success:', response.responseText);
+                try {
+                    var data = Ext.decode(response.responseText);
+                    me.processBackendSensorData(data);
+                } catch (e) {
+                    console.error('❌ External Backend API parse error:', e, 'Response:', response.responseText);
                     me.showNoDataMessage();
                 }
             },
             failure: function(response) {
-                console.error('❌ Backend API failed. Status:', response.status, 'Response:', response.responseText);
+                console.error('❌ External Backend API failed. Status:', response.status, 'Response:', response.responseText);
+                console.error('This might be a CORS issue or authentication required from external domains');
+                me.showNoDataMessage();
+            }
+        });
+    },
+    
+    tryExternalBackendAPI: function() {
+        var me = this;
+        
+        console.log('Trying external backend API...');
+        
+        Ext.Ajax.request({
+            url: 'https://dev-telematics.mst.co.id/backend/ax/current_data.php',
+            success: function(response) {
+                console.log('✅ External Backend API Success:', response.responseText);
+                try {
+                    var data = Ext.decode(response.responseText);
+                    me.processBackendSensorData(data);
+                } catch (e) {
+                    console.error('❌ External Backend API parse error:', e, 'Response:', response.responseText);
+                    me.showNoDataMessage();
+                }
+            },
+            failure: function(response) {
+                console.error('❌ External Backend API failed. Status:', response.status, 'Response:', response.responseText);
+                console.error('This might be a CORS issue or authentication required from external domains');
                 me.showNoDataMessage();
             }
         });
@@ -260,9 +316,9 @@ Ext.define('Store.dashpanel.view.MainPanel', {
         
         // Show empty grid with error message
         me.sensorGrid.getStore().loadData([{
-            sensor_name: 'No Data Available',
+            sensor_name: 'All APIs Failed',
             sensor_type: 'error',
-            current_value: 'All API endpoints failed',
+            current_value: 'Check console for detailed error messages',
             unit: '',
             status: 'critical',
             last_update: new Date(),
