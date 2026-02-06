@@ -73,13 +73,14 @@ Ext.define('Store.dashpanel.Module', {
         
         // Create collapsible sensor panel for main content area (bottom of map)
         me.sensorPanel = Ext.create('Ext.panel.Panel', {
-            region: 'south',
             title: '🔧 Dashboard Panel - Sensor Data',
             height: 250,
             split: true,
             collapsible: true,
             collapsed: true, // Start collapsed
             layout: 'fit',
+            region: 'south',
+            border: true,
             
             items: [{
                 xtype: 'grid',
