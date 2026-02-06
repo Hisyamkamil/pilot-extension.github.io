@@ -60,7 +60,7 @@ Ext.define('Store.dashpanel.Module', {
         var dockedSensorPanel = Ext.create('Ext.panel.Panel', {
             title: '🔧 Sensor Monitor - Sensor Data',
             height: 325,
-            region: 'south',  // Dock at bottom of mapframe
+            dock: 'bottom',  // Force bottom docking
             split: true,
             resizable: true,
             collapsible: true,
@@ -138,39 +138,89 @@ Ext.define('Store.dashpanel.Module', {
             }]
         });
         
-        // Add docked panel to mapframe (like reference pattern)
+        // Add docked panel to mapframe (like reference pattern - BOTTOM placement)
         try {
             if (skeleton && skeleton.mapframe) {
-                // Get the mapframe panel and add as docked bottom
-                var mapFramePanel = skeleton.mapframe.down('panel');
-                if (mapFramePanel && mapFramePanel.addDocked) {
-                    mapFramePanel.addDocked(dockedSensorPanel);
-                    console.log('✅ Docked sensor panel added to mapframe (bottom)');
-                    me.backgroundPanel = dockedSensorPanel;
-                } else if (skeleton.mapframe.add) {
-                    // Alternative: Add as regular item
-                    skeleton.mapframe.add(dockedSensorPanel);
-                    console.log('✅ Sensor panel added to mapframe container');
+                console.log('🔍 mapframe type:', skeleton.mapframe.$className);
+                console.log('🔍 mapframe layout:', skeleton.mapframe.layout);
+                console.log('🔍 mapframe methods:', Object.keys(skeleton.mapframe).slice(0, 15));
+                
+                // Find the main map panel to dock to its bottom
+                var mapFramePanel = skeleton.mapframe.down('panel'); // First panel in mapframe
+                
+                if (mapFramePanel) {
+                    console.log('🔍 Found mapframe panel:', mapFramePanel.$className);
+                    console.log('🔍 Panel layout:', mapFramePanel.layout);
+                    
+                    // Force bottom docking with explicit configuration
+                    dockedSensorPanel.dock = 'bottom';
+                    
+                    if (mapFramePanel.addDocked) {
+                        mapFramePanel.addDocked(dockedSensorPanel);
+                        console.log('✅ Docked sensor panel to BOTTOM of map panel');
+                        me.backgroundPanel = dockedSensorPanel;
+                    } else {
+                        console.warn('❌ addDocked not available on map panel');
+                    }
+                } else if (skeleton.mapframe.addDocked) {
+                    // Direct docking to mapframe itself
+                    skeleton.mapframe.addDocked(dockedSensorPanel);
+                    console.log('✅ Direct docking to mapframe');
                     me.backgroundPanel = dockedSensorPanel;
                 } else {
-                    console.warn('❌ Cannot dock panel to mapframe');
+                    console.warn('❌ No docking method available');
+                    console.log('Available mapframe methods:', Object.keys(skeleton.mapframe));
                 }
             }
         } catch (e) {
             console.error('❌ Failed to dock sensor panel:', e.message);
+            console.error('Available methods:', skeleton.mapframe ? Object.keys(skeleton.mapframe).slice(0, 10) : 'undefined');
         }
         
-        // Auto-load default vehicle sensor data
+        // Auto-load default vehicle sensor data with comprehensive debugging
         setTimeout(function() {
+            console.log('🚀 Auto-load timeout triggered...');
+            
             if (me.backgroundPanel) {
-                console.log('🚀 Auto-loading sensor data for default vehicle: 269384');
+                console.log('✅ Background panel available for auto-load');
+                
+                // Set vehicle details
                 me.currentVehicleId = '269384';
                 me.currentVehicleName = 'Iveco Astra v2 (Auto-loaded)';
+                
+                // Update panel title
                 me.backgroundPanel.setTitle('🔧 Sensor Monitor - ' + me.currentVehicleName + ' (Real-time)');
-                me.loadVehicleSensors('269384');
-                me.startVehicleRefresh('269384');
+                
+                // Expand panel if collapsed
+                if (me.backgroundPanel.collapsed) {
+                    me.backgroundPanel.expand();
+                    console.log('✅ Panel expanded for auto-load');
+                }
+                
+                // Verify methods exist before calling
+                console.log('🔍 loadVehicleSensors method exists:', typeof me.loadVehicleSensors);
+                console.log('🔍 startVehicleRefresh method exists:', typeof me.startVehicleRefresh);
+                
+                if (typeof me.loadVehicleSensors === 'function') {
+                    console.log('🔄 Calling loadVehicleSensors...');
+                    me.loadVehicleSensors('269384');
+                } else {
+                    console.error('❌ loadVehicleSensors method not found');
+                }
+                
+                if (typeof me.startVehicleRefresh === 'function') {
+                    console.log('🔄 Calling startVehicleRefresh...');
+                    me.startVehicleRefresh('269384');
+                } else {
+                    console.error('❌ startVehicleRefresh method not found');
+                }
+                
+                console.log('✅ Auto-load process completed');
+            } else {
+                console.error('❌ Background panel not available for auto-load');
+                console.log('🔍 Module backgroundPanel:', me.backgroundPanel);
             }
-        }, 2000);
+        }, 3000);
     },
     
     // Called from Navigation component when vehicle is selected
