@@ -15,21 +15,48 @@ Ext.define('Store.dashpanel.Module', {
         // 2. Create integrated main panel (like template-app/Map.js)
         var mainPanel = Ext.create('Store.dashpanel.view.MainPanelV2');
         
-        // 3. Add to mapframe (integrated layout, not overlay)
+        // 3. Add to mapframe (integrated layout, not overlay) - with extensive debugging
+        console.log('🔍 skeleton.mapframe available:', !!skeleton.mapframe);
+        console.log('🔍 skeleton.mapframe.add function:', typeof skeleton.mapframe.add);
+        console.log('🔍 MainPanelV2 created:', !!mainPanel);
+        
         try {
             skeleton.mapframe.add(mainPanel);
-            console.log('✅ MainPanelV2 integrated into mapframe (map + sensors layout)');
+            console.log('✅ MainPanelV2 add() succeeded');
             me.mainPanel = mainPanel;
         } catch (e) {
-            console.error('❌ Integration failed:', e);
-            // Try alternative approach
-            if (skeleton.mapframe.removeAll) {
-                skeleton.mapframe.removeAll();
-                skeleton.mapframe.add(mainPanel);
-                console.log('✅ Replaced mapframe with MainPanelV2');
+            console.error('❌ skeleton.mapframe.add() failed:', e.message);
+            
+            // Try alternative approaches
+            console.log('🔄 Trying alternative integration methods...');
+            
+            try {
+                if (skeleton.mapframe.removeAll && skeleton.mapframe.add) {
+                    skeleton.mapframe.removeAll();
+                    skeleton.mapframe.add(mainPanel);
+                    console.log('✅ Method 2: Replaced mapframe content');
+                    me.mainPanel = mainPanel;
+                } else if (skeleton.mapframe.items && skeleton.mapframe.items.add) {
+                    skeleton.mapframe.items.add(mainPanel);
+                    console.log('✅ Method 3: Added via items collection');
+                    me.mainPanel = mainPanel;
+                } else {
+                    throw new Error('No working integration method found');
+                }
+            } catch (e2) {
+                console.error('❌ All integration methods failed:', e2.message);
+                console.error('Mapframe type:', skeleton.mapframe.$className);
+                console.error('Available methods:', Object.keys(skeleton.mapframe));
+                
+                // Set mainPanel anyway for debugging
                 me.mainPanel = mainPanel;
+                console.warn('⚠️ MainPanelV2 created but not integrated - manual testing needed');
             }
         }
+        
+        // Verify integration
+        console.log('🔍 Final state - me.mainPanel:', !!me.mainPanel);
+        console.log('🔍 MainPanelV2 has loadVehicleData:', !!(me.mainPanel && me.mainPanel.loadVehicleData));
 
         console.log('✅ V2 with integrated main panel (template pattern applied)');
     },
