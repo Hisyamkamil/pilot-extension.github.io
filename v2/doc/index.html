@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel V2 Extension - Documentation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #34495e;
+            margin-top: 30px;
+            border-left: 4px solid #3498db;
+            padding-left: 15px;
+        }
+        h3 {
+            color: #7f8c8d;
+            margin-top: 20px;
+        }
+        .feature {
+            background: #ecf0f1;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 4px solid #3498db;
+        }
+        .warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+        .info {
+            background: #d1ecf1;
+            border-left: 4px solid #17a2b8;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+        code {
+            background: #f8f9fa;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-normal { background-color: #28a745; }
+        .status-warning { background-color: #ffc107; }
+        .status-critical { background-color: #dc3545; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 PILOT Panel Extension V2</h1>
+        
+        <div class="info">
+            <strong>Version:</strong> 2.0.0 (Context Menu Pattern)<br>
+            <strong>Compatible with:</strong> PILOT GPS Platform<br>
+            <strong>Extension Type:</strong> Context Menu Only Extension<br>
+            <strong>Pattern:</strong> Pattern 2 - Online tree context menu + modal window<br>
+            <strong>Last Updated:</strong> February 2026
+        </div>
+
+        <h2>📋 Overview</h2>
+        <p>
+            The Panel Extension V2 uses <strong>Pattern 2</strong> integration, providing sensor monitoring 
+            functionality through the online tree context menu. Instead of adding a dedicated navigation tab, 
+            this version integrates directly into the existing online vehicle tree by adding a context menu item.
+        </p>
+
+        <h2>🔄 V2 vs V1 Differences</h2>
+        
+        <table>
+            <tr>
+                <th>Feature</th>
+                <th>V1 (Pattern 1)</th>
+                <th>V2 (Pattern 2)</th>
+            </tr>
+            <tr>
+                <td>Integration</td>
+                <td>Navigation tab + Main panel</td>
+                <td>Context menu only</td>
+            </tr>
+            <tr>
+                <td>Access Method</td>
+                <td>Click navigation tab</td>
+                <td>Right-click vehicle → "View Dashboard Panel"</td>
+            </tr>
+            <tr>
+                <td>Vehicle Selection</td>
+                <td>Custom vehicle tree</td>
+                <td>Uses existing online tree</td>
+            </tr>
+            <tr>
+                <td>Display</td>
+                <td>Permanent panel</td>
+                <td>Modal window</td>
+            </tr>
+            <tr>
+                <td>UI Footprint</td>
+                <td>Adds navigation tab</td>
+                <td>Zero permanent UI</td>
+            </tr>
+        </table>
+
+        <h2>✨ Key Features</h2>
+        
+        <div class="feature">
+            <h3>🖱️ Context Menu Integration</h3>
+            <p>Right-click any vehicle in the online tree to access "View Dashboard Panel" option.</p>
+        </div>
+
+        <div class="feature">
+            <h3>📱 Modal Window Display</h3>
+            <p>Sensor data opens in a resizable, modal window that doesn't interfere with existing PILOT UI.</p>
+        </div>
+
+        <div class="feature">
+            <h3>🔄 Auto-Refresh</h3>
+            <p>Sensor data refreshes every 10 seconds while window is open, with manual refresh button available.</p>
+        </div>
+
+        <div class="feature">
+            <h3>⚠️ Smart Status Monitoring</h3>
+            <p>Intelligent status calculation with color-coded indicators:
+                <span class="status-indicator status-normal"></span>Normal,
+                <span class="status-indicator status-warning"></span>Warning,
+                <span class="status-indicator status-critical"></span>Critical
+            </p>
+        </div>
+
+        <h2>🎮 How to Use</h2>
+        
+        <ol>
+            <li><strong>Navigate to Online Tab:</strong> Go to the existing "Online" tab in PILOT navigation</li>
+            <li><strong>Find Vehicle:</strong> Locate any vehicle in the online tree</li>
+            <li><strong>Right-Click:</strong> Right-click on the vehicle to open context menu</li>
+            <li><strong>Select Option:</strong> Click "View Dashboard Panel" from the menu</li>
+            <li><strong>View Sensors:</strong> Modal window opens showing real-time sensor data</li>
+            <li><strong>Auto-Updates:</strong> Data refreshes automatically every 10 seconds</li>
+            <li><strong>Manual Refresh:</strong> Use "Refresh" button for immediate updates</li>
+            <li><strong>Close Window:</strong> Click X or press ESC to close</li>
+        </ol>
+
+        <h2>🔌 Data Sources</h2>
+        
+        <h3>API Endpoints (Same as V1)</h3>
+        <table>
+            <tr>
+                <th>Priority</th>
+                <th>Endpoint</th>
+                <th>Authentication</th>
+                <th>Purpose</th>
+            </tr>
+            <tr>
+                <td>1</td>
+                <td><code>/api/v3/vehicles/status</code></td>
+                <td>Bearer Token</td>
+                <td>PILOT v3 API (if available)</td>
+            </tr>
+            <tr>
+                <td>2</td>
+                <td><code>/backend/ax/current_data.php</code></td>
+                <td>None</td>
+                <td>Backend API (primary)</td>
+            </tr>
+            <tr>
+                <td>3</td>
+                <td><code>https://dev-telematics.mst.co.id/backend/ax/current_data.php</code></td>
+                <td>None</td>
+                <td>External fallback</td>
+            </tr>
+        </table>
+
+        <div class="info">
+            <strong>Smart Fallback:</strong> Extension tries APIs in order, ensuring sensor data loads from the first available endpoint.
+        </div>
+
+        <h2>🛠️ Technical Implementation</h2>
+        
+        <h3>Pattern 2 Architecture</h3>
+        <ul>
+            <li><strong>No Navigation Tab:</strong> Zero permanent UI footprint</li>
+            <li><strong>Context Menu Integration:</strong> Adds item to existing online tree right-click menu</li>
+            <li><strong>Modal Window:</strong> <code>Ext.window.Window</code> for sensor display</li>
+            <li><strong>Tree Integration:</strong> Uses <code>skeleton.navigation.online.online_tree</code></li>
+            <li><strong>Auto-Cleanup:</strong> Stops refresh tasks when window closes</li>
+        </ul>
+
+        <h3>Context Menu Implementation</h3>
+        <ul>
+            <li><strong>Safe Access:</strong> Handles both <code>context_menu</code> and <code>contextmenu</code> properties</li>
+            <li><strong>Scope Binding:</strong> Uses <code>scope: tree</code> for access to <code>this.record</code></li>
+            <li><strong>Icon Required:</strong> <code>iconCls: 'fa fa-tachometer-alt'</code> (Font Awesome v6)</li>
+            <li><strong>Preserve Existing:</strong> Only adds to menu, doesn't replace existing items</li>
+        </ul>
+
+        <h3>File Structure</h3>
+        <ul>
+            <li><code>V2/Module.js</code> - Main extension entry point</li>
+            <li><code>V2/doc/index.html</code> - This documentation file</li>
+            <li><code>V2/style.css</code> - Optional modal window styling (optional)</li>
+        </ul>
+
+        <h2>📊 Supported Sensor Types</h2>
+        
+        <table>
+            <tr>
+                <th>Sensor Type</th>
+                <th>Icon</th>
+                <th>Typical Unit</th>
+                <th>Example Values</th>
+            </tr>
+            <tr>
+                <td>Temperature</td>
+                <td>🌡️</td>
+                <td>°C</td>
+                <td>Engine Oil Temperature: 78.88°C</td>
+            </tr>
+            <tr>
+                <td>Voltage</td>
+                <td>⚡</td>
+                <td>V</td>
+                <td>Battery Voltage: 26.75V</td>
+            </tr>
+            <tr>
+                <td>Pressure</td>
+                <td>📊</td>
+                <td>kPa, PSI</td>
+                <td>Oil Pressure: 280 kPa</td>
+            </tr>
+            <tr>
+                <td>Level</td>
+                <td>🔋</td>
+                <td>%</td>
+                <td>Fuel Level: 14%</td>
+            </tr>
+            <tr>
+                <td>Speed</td>
+                <td>🏃</td>
+                <td>km/h, rpm</td>
+                <td>Engine Speed: 36 rpm</td>
+            </tr>
+            <tr>
+                <td>Weight</td>
+                <td>⚖️</td>
+                <td>kg</td>
+                <td>Load Weight: 14356 kg</td>
+            </tr>
+        </table>
+
+        <h2>🎯 Advantages of V2 (Pattern 2)</h2>
+        
+        <div class="feature">
+            <p><strong>Zero UI Footprint:</strong> No permanent navigation tabs or panels</p>
+        </div>
+        
+        <div class="feature">
+            <p><strong>Native Integration:</strong> Uses existing online tree, feels native</p>
+        </div>
+        
+        <div class="feature">
+            <p><strong>On-Demand:</strong> Only loads when actually needed</p>
+        </div>
+        
+        <div class="feature">
+            <p><strong>Modal Focus:</strong> Sensor data in dedicated modal window</p>
+        </div>
+        
+        <div class="feature">
+            <p><strong>Better Performance:</strong> No background processes until window opens</p>
+        </div>
+
+        <h2>🔍 Usage Scenarios</h2>
+        
+        <h3>When to Use V2 (Pattern 2):</h3>
+        <ul>
+            <li>You want minimal UI impact on existing PILOT interface</li>
+            <li>Sensor monitoring is occasional, not continuous</li>
+            <li>Users prefer context menu access</li>
+            <li>You need quick sensor checks without dedicated panels</li>
+        </ul>
+
+        <h3>When to Use V1 (Pattern 1):</h3>
+        <ul>
+            <li>You need continuous sensor monitoring</li>
+            <li>Multiple vehicles monitored simultaneously</li>
+            <li>Dedicated sensor monitoring workspace required</li>
+            <li>Users prefer permanent navigation access</li>
+        </ul>
+
+        <h2>⚙️ Configuration</h2>
+        
+        <h3>Extension Installation</h3>
+        <ol>
+            <li>Host the V2 extension files on your web server</li>
+            <li>Register the extension in PILOT admin panel with the V2 base URL</li>
+            <li>Activate the extension for desired contracts/accounts</li>
+            <li>The extension will add "View Dashboard Panel" to vehicle context menus</li>
+        </ol>
+
+        <div class="warning">
+            <strong>Important:</strong> Do not install both V1 and V2 simultaneously as they use the same namespace. Choose one version based on your needs.
+        </div>
+
+        <h2>🔄 Real-time Updates</h2>
+        
+        <div class="info">
+            <p>
+                The modal window implements automatic data refresh with a 10-second interval. 
+                This ensures sensor values are always current while the window is open.
+            </p>
+        </div>
+
+        <div class="warning">
+            <strong>Performance Note:</strong> Auto-refresh automatically stops when the modal window is closed, 
+            optimizing resource usage and preventing background API calls.
+        </div>
+
+        <h2>🚀 Benefits Over V1</h2>
+        
+        <div class="feature">
+            <p><strong>Cleaner Interface:</strong> No permanent UI elements added to PILOT</p>
+        </div>
+        
+        <div class="feature">
+            <p><strong>Better Integration:</strong> Uses native PILOT online tree</p>
+        </div>
+        
+        <div class="feature">
+            <p><strong>Resource Efficient:</strong> Only consumes resources when actively used</p>
+        </div>
+        
+        <div class="feature">
+            <p><strong>Modal Focus:</strong> Dedicated window prevents UI clutter</p>
+        </div>
+
+        <h2>🔍 Troubleshooting</h2>
+        
+        <h3>Common Issues</h3>
+        <table>
+            <tr>
+                <th>Issue</th>
+                <th>Possible Cause</th>
+                <th>Solution</th>
+            </tr>
+            <tr>
+                <td>Context menu item missing</td>
+                <td>Online tree not available</td>
+                <td>Check PILOT version compatibility and online tree access</td>
+            </tr>
+            <tr>
+                <td>Modal shows "No Data Available"</td>
+                <td>API endpoints not accessible</td>
+                <td>Check network connectivity and API permissions</td>
+            </tr>
+            <tr>
+                <td>Right-click not working</td>
+                <td>Context menu not initialized</td>
+                <td>Check console for "Context menu item added successfully"</td>
+            </tr>
+        </table>
+
+        <div class="warning">
+            <strong>Note:</strong> This extension requires PILOT GPS platform version 7.7 or higher with 
+            online tree context menu support.
+        </div>
+
+        <footer style="margin-top: 40px; text-align: center; color: #7f8c8d; border-top: 1px solid #ecf0f1; padding-top: 20px;">
+            <p>PILOT Panel Extension V2.0.0 | Context Menu Pattern | Compatible with PILOT GPS Platform</p>
+        </footer>
+    </div>
+</body>
+</html>
