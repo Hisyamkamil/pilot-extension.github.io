@@ -100,23 +100,56 @@ Ext.define('Store.dashpanel.Module', {
         
         // Create sensor panel to dock within mapframe (like reference pattern)
         var dockedSensorPanel = Ext.create('Ext.panel.Panel', {
+            title: '🔧 Sensor Monitor - Sensor Data',
             height: 325,
             dock: 'bottom',  // Force bottom docking
             split: true,
             resizable: true,
             collapsible: true,
             collapsed: false,
-            animCollapse: true,
+            animCollapse: 300,  // Smooth animation duration (300ms)
+            collapseDirection: 'bottom',  // Collapse towards bottom
+            titleCollapse: true,  // Allow clicking title to collapse
             layout: 'fit',
             hidden: true,  // Start hidden - show only when navigation tab is clicked
-            titleCollapse: true,  // Allow clicking title to collapse
-            
-            // Custom title with collapse button on LEFT (like reference pattern)
-            title: '<a class="x-btn x-unselectable x-btn-default-small" style="float: left; margin-right: 10px;" onclick="Ext.getCmp(\'' +
-                   'dashpanel-sensor-panel\').collapse();">' +
-                   '<span class="x-btn-icon-el fa fa-chevron-down"></span></a>' +
-                   '🔧 Sensor Monitor - Sensor Data',
             id: 'dashpanel-sensor-panel',
+            
+            // Tools on LEFT side (before title) - like reference pattern
+            tools: [{
+                type: 'down',  // Down arrow for expand (when collapsed)
+                tooltip: 'Expand Panel',
+                handler: function() {
+                    if (dockedSensorPanel.collapsed) {
+                        dockedSensorPanel.expand();
+                    }
+                }
+            }, {
+                type: 'up',   // Up arrow for collapse (when expanded)
+                tooltip: 'Collapse Panel',
+                handler: function() {
+                    if (!dockedSensorPanel.collapsed) {
+                        dockedSensorPanel.collapse();
+                    }
+                }
+            }],
+            
+            // Smooth animation listeners
+            listeners: {
+                beforecollapse: function() {
+                    console.log('🔽 Panel collapsing...');
+                    return true; // Allow collapse
+                },
+                collapse: function() {
+                    console.log('✅ Panel collapsed with animation');
+                },
+                beforeexpand: function() {
+                    console.log('🔼 Panel expanding...');
+                    return true; // Allow expand
+                },
+                expand: function() {
+                    console.log('✅ Panel expanded with animation');
+                }
+            },
             
             items: [{
                 xtype: 'grid',
