@@ -2,7 +2,7 @@ Ext.define('Store.dashpanel.view.Navigation', {
     extend: 'Ext.panel.Panel',
     alias: 'widget.dashpanelnav',
     
-    title: 'Dashboard Panel',
+    title: 'Dashboard Panel V2',
     iconCls: 'fa fa-tachometer-alt',
     iconAlign: 'top',
     layout: 'fit',
@@ -65,7 +65,7 @@ Ext.define('Store.dashpanel.view.Navigation', {
                             if (me.map_frame) {
                                 var vehicleId = record.get('id') || record.get('vehicle_id');
                                 var vehicleName = record.get('name') || record.get('text') || 'Unknown Vehicle';
-                                me.map_frame.loadVehicleSensors(vehicleId, vehicleName);
+                                me.map_frame.loadVehicleData(vehicleId, vehicleName, record);
                             }
                         }
                     }
