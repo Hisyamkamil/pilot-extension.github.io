@@ -69,9 +69,12 @@ Ext.define('Store.dashpanel.view.Navigation', {
                                 me.map_frame.loadVehicleData(vehicleId, vehicleName, record);
                             }
                             
-                            // Trigger background sensor panel (like template pattern)
-                            if (window.dashpanelModule) {
-                                window.dashpanelModule.showVehicleSensors(vehicleId, vehicleName, record);
+                            // Trigger MainPanelV2 sensor loading (direct call)
+                            if (window.dashpanelModule && window.dashpanelModule.mainPanel) {
+                                console.log('🚗 Calling MainPanelV2.loadVehicleData for:', vehicleName);
+                                window.dashpanelModule.mainPanel.loadVehicleData(vehicleId, vehicleName, record);
+                            } else {
+                                console.error('❌ MainPanelV2 not available from navigation');
                             }
                         }
                     }
