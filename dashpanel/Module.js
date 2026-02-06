@@ -31,7 +31,7 @@ Ext.define('Store.dashpanel.Module', {
             
             // Create vehicle tree sub-panel UNDER existing Online tree
             var dashboardSubPanel = Ext.create('Store.dashpanel.view.Navigation', {
-                title: 'Dashboard Panel V2',
+                title: 'Sensor Monitor',
                 iconCls: 'fa fa-tachometer-alt',
                 height: 300,
                 collapsible: true,
@@ -63,29 +63,44 @@ Ext.define('Store.dashpanel.Module', {
         
         console.log('📊 Creating background sensor panel (behind navigation)...');
         
-        // Create permanent sensor panel with lower z-index (behind navigation)
-        var backgroundPanel = Ext.create('Ext.panel.Panel', {
-            id: 'dashpanel-background-panel',
-            title: '🔧 Dashboard Panel - Sensor Data',
-            width: '100%',
-            height: 300,
+        // Create sensor panel on BOTTOM-RIGHT of main content area (over map)
+        var bottomRightPanel = Ext.create('Ext.panel.Panel', {
+            id: 'dashpanel-bottom-right-panel',
+            title: '🔧 Sensor Monitor - Sensor Data',
+            width: 500,
+            height: 350,
             collapsible: true,
             collapsed: true,  // Start collapsed
-            resizable: false,
+            animCollapse: true,
+            titleCollapse: true,
+            // Note: Remove collapseDirection to use default behavior
+            tools: [{
+                type: 'toggle',
+                tooltip: 'Expand/Collapse Panel',
+                handler: function(event, toolEl, panel) {
+                    if (panel.collapsed) {
+                        panel.expand();
+                    } else {
+                        panel.collapse();
+                    }
+                }
+            }],
+            resizable: true,
             draggable: false,
             closable: false,
             layout: 'fit',
             
-            // Position behind navigation panel (lower z-index)
+            // Position on BOTTOM-RIGHT of main content area (overlays map)
             style: {
                 position: 'fixed',
-                bottom: '0px',
-                left: '0px',
-                right: '0px',
-                'z-index': '500',  // Lower than navigation (usually 1000+)
-                'box-shadow': '0 -2px 10px rgba(0,0,0,0.2)',
-                'background-color': 'white',
-                'border-top': '1px solid #ddd'
+                bottom: '10px',   // Close to bottom edge
+                right: '10px',    // Close to right edge
+                'z-index': '500', // In front of map, behind navigation panels
+                'box-shadow': '0 0 20px rgba(0,0,0,0.4)',
+                'background-color': 'rgba(255,255,255,0.95)', // Semi-transparent white
+                'border': '2px solid #007bff',
+                'border-radius': '8px',
+                'backdrop-filter': 'blur(5px)' // Blur effect behind panel
             },
             
             items: [{
@@ -167,12 +182,12 @@ Ext.define('Store.dashpanel.Module', {
             }
         });
         
-        // Render to document body
-        backgroundPanel.render(Ext.getBody());
-        console.log('✅ Background sensor panel created (behind navigation, z-index: 500)');
+        // Render to document body (bottom-right of main area)
+        bottomRightPanel.render(Ext.getBody());
+        console.log('✅ Bottom-right sensor panel created (over map, z-index: 100)');
         
         // Store reference
-        me.backgroundPanel = backgroundPanel;
+        me.backgroundPanel = bottomRightPanel;
     },
     
     // Called from Navigation component when vehicle is selected
@@ -187,7 +202,7 @@ Ext.define('Store.dashpanel.Module', {
         
         // Update panel title
         if (me.backgroundPanel) {
-            me.backgroundPanel.setTitle('🔧 Dashboard Panel - ' + vehicleName + ' (Real-time)');
+            me.backgroundPanel.setTitle('🔧 Sensor Monitor - ' + vehicleName + ' (Real-time)');
             
             // Expand panel when vehicle selected
             if (me.backgroundPanel.collapsed) {
