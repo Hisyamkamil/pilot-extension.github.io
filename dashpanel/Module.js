@@ -102,35 +102,43 @@ Ext.define('Store.dashpanel.Module', {
         var dockedSensorPanel = Ext.create('Ext.panel.Panel', {
             title: '🔧 Sensor Monitor - Sensor Data',
             height: 325,
-            
-            region: 'south',       // bottom of layout, NOT docked
+        
+            region: 'south',
             split: true,
             collapsible: true,
-            collapseMode: 'mini',  // <== clean mini collapse header
-            animCollapse: true,    // smooth top-down animation
+            collapseMode: 'mini',
+            animCollapse: true,
             titleCollapse: true,
         
-            // DO NOT use collapseDirection (forces wrong animation)
-            // DO NOT dock panel (breaks mini mode)
-            
             hidden: true,
             layout: 'fit',
             id: 'dashpanel-sensor-panel',
         
-            tools: [{
-                itemId: 'toggleCollapseTool',
-                type: 'down',
-                callback: function(panel) {
-                    panel.collapsed ? panel.expand() : panel.collapse();
-                }
-            }],
+            // ────────────────────────────────
+            // LEFT-SIDE TOOL BUTTON FIX
+            // ────────────────────────────────
+            header: {
+                layout: {
+                    pack: 'start',
+                    align: 'middle'
+                },
+                items: [{
+                    xtype: 'tool',
+                    itemId: 'leftCollapseTool',
+                    type: 'down',        // starts expanded
+                    margin: '0 8 0 0',
+                    callback: function(panel){
+                        panel.collapsed ? panel.expand() : panel.collapse();
+                    }
+                }]
+            },
         
             listeners: {
                 collapse: function(panel) {
-                    panel.down('#toggleCollapseTool').setType('up');
+                    panel.down('#leftCollapseTool').setType('up');
                 },
                 expand: function(panel) {
-                    panel.down('#toggleCollapseTool').setType('down');
+                    panel.down('#leftCollapseTool').setType('down');
                 }
             },
         
