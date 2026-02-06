@@ -102,69 +102,73 @@ Ext.define('Store.dashpanel.Module', {
         var dockedSensorPanel = Ext.create('Ext.panel.Panel', {
             title: '🔧 Sensor Monitor - Sensor Data',
             height: 325,
-            dock: 'bottom',  // Force bottom docking
+            dockedItems: [{
+                xtype: 'toolbar',
+                dock: 'top',
+                items: [{
+                    text: 'Refresh',
+                    iconCls: 'fa fa-refresh',
+                    handler: function () {
+                        if (me.currentVehicleId) {
+                            me.loadVehicleSensors(me.currentVehicleId);
+                        }
+                    }
+                }, '->', {
+                    xtype: 'tbtext',
+                    text: 'Real-time (0.5s)',
+                    style: 'color: #666; font-size: 11px;'
+                }]
+            }],
+        
+            dock: 'bottom',
             split: true,
             resizable: true,
             collapsible: true,
-            collapsed: false,
-            animCollapse: 300,  // Smooth animation duration (300ms)
-            collapseDirection: 'bottom',  // Collapse towards bottom
-            titleCollapse: true,  // Allow clicking title to collapse
-            layout: 'fit',
-            hidden: true,  // Start hidden - show only when navigation tab is clicked
+            collapseMode: 'mini',
+            animCollapse: true,
+            collapseDirection: 'bottom',
+            titleCollapse: true,
+        
+            hidden: true,
             id: 'dashpanel-sensor-panel',
-            
-            // Tools on LEFT side (before title) - like reference pattern
+            layout: 'fit',
+        
+            // --- FIXED CUSTOM TOOLS ---
             tools: [{
-                type: 'down',  // Down arrow for expand (when collapsed)
-                tooltip: 'Expand Panel',
-                handler: function() {
-                    if (dockedSensorPanel.collapsed) {
-                        dockedSensorPanel.expand();
-                    }
-                }
-            }, {
-                type: 'up',   // Up arrow for collapse (when expanded)
-                tooltip: 'Collapse Panel',
-                handler: function() {
-                    if (!dockedSensorPanel.collapsed) {
-                        dockedSensorPanel.collapse();
-                    }
+                itemId: 'toggleCollapseTool',
+                type: 'down',     // starts expanded, so show “down arrow”
+                callback: function(panel) {
+                    panel.collapsed ? panel.expand() : panel.collapse();
                 }
             }],
-            
-            // Smooth animation listeners
+        
             listeners: {
-                beforecollapse: function() {
-                    console.log('🔽 Panel collapsing...');
-                    return true; // Allow collapse
+                collapse: function(panel) {
+                    panel.down('#toggleCollapseTool').setType('up');   // when collapsed → show UP arrow
+                    console.log("Panel collapsed");
                 },
-                collapse: function() {
-                    console.log('✅ Panel collapsed with animation');
-                },
-                beforeexpand: function() {
-                    console.log('🔼 Panel expanding...');
-                    return true; // Allow expand
-                },
-                expand: function() {
-                    console.log('✅ Panel expanded with animation');
+                expand: function(panel) {
+                    panel.down('#toggleCollapseTool').setType('down'); // when expanded → show DOWN arrow
+                    console.log("Panel expanded");
                 }
             },
-            
+        
             items: [{
                 xtype: 'grid',
                 store: Ext.create('Ext.data.Store', {
                     fields: ['sensor_name', 'sensor_type', 'current_value', 'unit', 'status', 'last_update'],
                     data: []
                 }),
+        
                 columns: [{
                     text: 'Sensor Name',
                     dataIndex: 'sensor_name',
                     flex: 2,
                     renderer: function(value, meta, record) {
-                        var iconClass = me.getSensorIcon(record.get('sensor_type'));
-                        return '<i class="' + iconClass + '"></i> ' + value;
-                    }
+                        var icon = me.getSensorIcon(record.get('sensor_type'));
+                        return '<i class="' + icon + '"></i> ' + value;
+                    },
+                    scope: me     // important fix
                 }, {
                     text: 'Value',
                     dataIndex: 'current_value',
@@ -172,14 +176,17 @@ Ext.define('Store.dashpanel.Module', {
                     renderer: function(value, meta, record) {
                         var unit = record.get('unit') || '';
                         var status = record.get('status');
-                        
+        
                         var color = status === 'critical' ? '#ff0000' :
-                                   status === 'warning' ? '#ff8c00' : '#008000';
-                        
-                        var formattedValue = typeof value === 'number' ?
-                                           Ext.util.Format.number(value, '0.##') : value;
-                        
-                        return '<span style="color: ' + color + '; font-weight: bold;">' + formattedValue + ' ' + unit + '</span>';
+                                    status === 'warning' ? '#ff8c00' : '#008000';
+        
+                        var formattedValue = typeof value === 'number'
+                            ? Ext.util.Format.number(value, '0.##')
+                            : value;
+        
+                        return '<span style="color:' + color + '; font-weight:bold;">' +
+                               formattedValue + ' ' + unit +
+                               '</span>';
                     }
                 }, {
                     text: 'Status',
@@ -187,39 +194,30 @@ Ext.define('Store.dashpanel.Module', {
                     width: 80,
                     renderer: function(value) {
                         var icon = value === 'critical' ? 'fa fa-times-circle' :
-                                  value === 'warning' ? 'fa fa-exclamation-triangle' : 'fa fa-check-circle';
+                                   value === 'warning' ? 'fa fa-exclamation-triangle' :
+                                                         'fa fa-check-circle';
                         var color = value === 'critical' ? 'red' :
                                    value === 'warning' ? 'orange' : 'green';
-                        return '<i class="' + icon + '" style="color: ' + color + ';"></i>';
+                        return '<i class="' + icon + '" style="color:' + color + '"></i>';
                     }
                 }, {
                     text: 'Last Update',
                     dataIndex: 'last_update',
                     width: 120,
                     renderer: function(value) {
-                        return value ? Ext.Date.format(new Date(value), 'H:i:s') : '-';
+                        return value
+                            ? Ext.Date.format(new Date(value), 'H:i:s')
+                            : '-';
                     }
                 }],
+        
                 viewConfig: {
                     emptyText: 'Select a vehicle from Sensor Monitor navigation to view sensors',
                     deferEmptyText: false
                 }
-            }],
-            
-            tbar: [{
-                text: 'Refresh',
-                iconCls: 'fa fa-refresh',
-                handler: function() {
-                    if (me.currentVehicleId) {
-                        me.loadVehicleSensors(me.currentVehicleId);
-                    }
-                }
-            }, '->', {
-                xtype: 'tbtext',
-                text: 'Real-time (0.5s)',
-                style: 'color: #666; font-size: 11px;'
             }]
         });
+
         
         // Add docked panel to mapframe (like reference pattern - BOTTOM placement)
         try {
