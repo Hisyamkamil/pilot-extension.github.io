@@ -58,7 +58,6 @@ Ext.define('Store.dashpanel.Module', {
         
         // Create sensor panel to dock within mapframe (like reference pattern)
         var dockedSensorPanel = Ext.create('Ext.panel.Panel', {
-            title: '🔧 Sensor Monitor - Sensor Data',
             height: 325,
             dock: 'bottom',  // Force bottom docking
             split: true,
@@ -67,6 +66,15 @@ Ext.define('Store.dashpanel.Module', {
             collapsed: false,
             animCollapse: true,
             layout: 'fit',
+            hidden: true,  // Start hidden - show only when navigation tab is clicked
+            titleCollapse: true,  // Allow clicking title to collapse
+            
+            // Custom title with collapse button on LEFT (like reference pattern)
+            title: '<a class="x-btn x-unselectable x-btn-default-small" style="float: left; margin-right: 10px;" onclick="Ext.getCmp(\'' +
+                   'dashpanel-sensor-panel\').collapse();">' +
+                   '<span class="x-btn-icon-el fa fa-chevron-down"></span></a>' +
+                   '🔧 Sensor Monitor - Sensor Data',
+            id: 'dashpanel-sensor-panel',
             
             items: [{
                 xtype: 'grid',
@@ -177,8 +185,11 @@ Ext.define('Store.dashpanel.Module', {
             console.error('Available methods:', skeleton.mapframe ? Object.keys(skeleton.mapframe).slice(0, 10) : 'undefined');
         }
         
-        // Note: Auto-load removed - sensors load only when vehicle is selected from navigation
-        console.log('✅ Docked sensor panel ready - waiting for vehicle selection');
+        // Store reference for navigation access
+        me.backgroundPanel = dockedSensorPanel;
+        
+        // Panel starts hidden - will be shown when Sensor Monitor navigation tab is clicked
+        console.log('✅ Docked sensor panel created (hidden) - ready for navigation activation');
     },
     
     // Called from Navigation component when vehicle is selected
