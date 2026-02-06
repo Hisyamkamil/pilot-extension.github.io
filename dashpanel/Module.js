@@ -1,4 +1,4 @@
-Ext.define('Store.panel.Module', {
+Ext.define('Store.dashpanel.Module', {
     extend: 'Ext.Component',
 
     initModule: function () {
