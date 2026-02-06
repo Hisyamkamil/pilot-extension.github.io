@@ -64,17 +64,17 @@ Ext.define('Store.dashpanel.view.Navigation', {
                             var vehicleId = record.get('id') || record.get('vehicle_id');
                             var vehicleName = record.get('name') || record.get('text') || 'Unknown Vehicle';
                             
-                            // Update main panel with selected vehicle
-                            if (me.map_frame) {
-                                me.map_frame.loadVehicleData(vehicleId, vehicleName, record);
-                            }
+                            // Trigger MainPanelV2 sensor loading (direct call only)
+                            console.log('🚗 Vehicle selected in Sensor Monitor:', vehicleName, 'ID:', vehicleId);
                             
-                            // Trigger MainPanelV2 sensor loading (direct call)
                             if (window.dashpanelModule && window.dashpanelModule.mainPanel) {
-                                console.log('🚗 Calling MainPanelV2.loadVehicleData for:', vehicleName);
+                                console.log('✅ Found MainPanelV2, loading vehicle data...');
                                 window.dashpanelModule.mainPanel.loadVehicleData(vehicleId, vehicleName, record);
+                                console.log('✅ MainPanelV2.loadVehicleData called successfully');
                             } else {
                                 console.error('❌ MainPanelV2 not available from navigation');
+                                console.error('window.dashpanelModule:', !!window.dashpanelModule);
+                                console.error('mainPanel:', window.dashpanelModule ? !!window.dashpanelModule.mainPanel : 'N/A');
                             }
                         }
                     }
