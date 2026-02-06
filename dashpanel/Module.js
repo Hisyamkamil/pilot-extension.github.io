@@ -42,6 +42,48 @@ Ext.define('Store.dashpanel.Module', {
             if (onlinePanel.add) {
                 onlinePanel.add(dashboardSubPanel);
                 console.log('✅ Dashboard sub-panel added UNDER Online tree (left panel)');
+                
+                // Listen for tab selection to show/hide docked panel with enhanced debugging
+                if (onlinePanel.on) {
+                    console.log('🔍 Setting up tabchange listener on Online panel');
+                    onlinePanel.on('tabchange', function(tabPanel, newCard, oldCard) {
+                        console.log('🔍 Tab changed from:', oldCard ? oldCard.title : 'none', 'to:', newCard ? newCard.title : 'none');
+                        console.log('🔍 backgroundPanel available:', !!me.backgroundPanel);
+                        
+                        if (newCard && newCard.title === 'Sensor Monitor' && me.backgroundPanel) {
+                            console.log('🔧 Sensor Monitor tab selected - showing docked panel');
+                            me.backgroundPanel.setHidden(false);
+                            me.backgroundPanel.show();
+                            console.log('✅ Docked panel should now be visible');
+                        } else if (me.backgroundPanel && !me.backgroundPanel.hidden) {
+                            console.log('🔧 Other tab selected - hiding docked panel');
+                            me.backgroundPanel.setHidden(true);
+                            me.backgroundPanel.hide();
+                            console.log('✅ Docked panel hidden');
+                        }
+                    });
+                    
+                    // Also listen for when the sub-panel itself becomes active
+                    dashboardSubPanel.on('activate', function() {
+                        console.log('🔧 Dashboard sub-panel activated directly');
+                        if (me.backgroundPanel) {
+                            me.backgroundPanel.setHidden(false);
+                            me.backgroundPanel.show();
+                            console.log('✅ Docked panel shown via sub-panel activation');
+                        }
+                    });
+                    
+                    dashboardSubPanel.on('deactivate', function() {
+                        console.log('🔧 Dashboard sub-panel deactivated');
+                        if (me.backgroundPanel) {
+                            me.backgroundPanel.setHidden(true);
+                            me.backgroundPanel.hide();
+                            console.log('✅ Docked panel hidden via sub-panel deactivation');
+                        }
+                    });
+                } else {
+                    console.warn('❌ Cannot listen for tab events on Online panel');
+                }
             } else {
                 console.error('❌ Cannot add sub-panel to Online navigation');
             }
