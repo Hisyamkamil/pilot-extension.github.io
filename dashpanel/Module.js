@@ -31,7 +31,7 @@ Ext.define('Store.dashpanel.Module', {
             
             // Create vehicle tree sub-panel UNDER existing Online tree
             var dashboardSubPanel = Ext.create('Store.dashpanel.view.Navigation', {
-                title: 'Dashboard Panel V2',
+                title: 'Sensor Monitor',
                 iconCls: 'fa fa-tachometer-alt',
                 height: 300,
                 collapsible: true,
@@ -63,16 +63,17 @@ Ext.define('Store.dashpanel.Module', {
         
         console.log('📊 Creating background sensor panel (behind navigation)...');
         
-        // Create permanent sensor panel with VERY low z-index (behind everything)
-        var backgroundPanel = Ext.create('Ext.panel.Panel', {
-            id: 'dashpanel-background-panel',
-            title: '🔧 Dashboard Panel - Sensor Data',
-            width: '100%',
-            height: 300,
+        // Create sensor panel on RIGHT side of left navigation (not bottom)
+        var rightSensorPanel = Ext.create('Ext.panel.Panel', {
+            id: 'dashpanel-right-panel',
+            title: '🔧 Sensor Monitor - Sensor Data',
+            width: 400,
+            height: '100%',
             collapsible: true,
             collapsed: true,  // Start collapsed
-            animCollapse: true,  // Enable animation for collapse/expand
-            titleCollapse: true, // Allow click on title to collapse/expand
+            animCollapse: true,
+            titleCollapse: true,
+            collapseDirection: 'left', // Collapse to the left (towards navigation)
             tools: [{
                 type: 'toggle',
                 tooltip: 'Expand/Collapse Panel',
@@ -84,21 +85,21 @@ Ext.define('Store.dashpanel.Module', {
                     }
                 }
             }],
-            resizable: false,
+            resizable: true,
             draggable: false,
             closable: false,
             layout: 'fit',
             
-            // Position behind navigation panel (MUCH lower z-index)
+            // Position on RIGHT side of left navigation (very low z-index)
             style: {
                 position: 'fixed',
+                top: '60px',  // Below header
+                left: '300px', // Right of left navigation (adjust based on nav width)
                 bottom: '0px',
-                left: '0px',
-                right: '0px',
-                'z-index': '50',  // Very low - behind everything
-                'box-shadow': '0 -2px 10px rgba(0,0,0,0.2)',
+                'z-index': '1',  // Extremely low - behind everything including map
+                'box-shadow': '2px 0 10px rgba(0,0,0,0.1)',
                 'background-color': 'white',
-                'border-top': '2px solid #007bff'
+                'border-left': '2px solid #007bff'
             },
             
             items: [{
@@ -180,12 +181,12 @@ Ext.define('Store.dashpanel.Module', {
             }
         });
         
-        // Render to document body
-        backgroundPanel.render(Ext.getBody());
-        console.log('✅ Background sensor panel created (behind navigation, z-index: 500)');
+        // Render to document body (right side of navigation)
+        rightSensorPanel.render(Ext.getBody());
+        console.log('✅ Right-side sensor panel created (beside left navigation, z-index: 1)');
         
         // Store reference
-        me.backgroundPanel = backgroundPanel;
+        me.backgroundPanel = rightSensorPanel;
     },
     
     // Called from Navigation component when vehicle is selected
@@ -200,7 +201,7 @@ Ext.define('Store.dashpanel.Module', {
         
         // Update panel title
         if (me.backgroundPanel) {
-            me.backgroundPanel.setTitle('🔧 Dashboard Panel - ' + vehicleName + ' (Real-time)');
+            me.backgroundPanel.setTitle('🔧 Sensor Monitor - ' + vehicleName + ' (Real-time)');
             
             // Expand panel when vehicle selected
             if (me.backgroundPanel.collapsed) {
