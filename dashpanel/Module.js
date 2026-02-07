@@ -4,20 +4,20 @@ Ext.define('Store.dashpanel.Module', {
     initModule: function () {
         var me = this;
         
-        console.log('Dashpanel V2 (Template Pattern) extension initializing...');
+        console.log('Dashpanel V3 (Card-Based Layout) extension initializing...');
         
         // Store reference for later use
         window.dashpanelModule = me;
         
-        // Add sub-panel to existing Online navigation (NOT new top tab)
+        // Add sub-panel to existing Online navigation
         me.addSubPanelToOnlineNavigation();
         
-        // Create background sensor panel (behind navigation)
+        // Create card-based sensor panel (docked to mapframe)
         Ext.defer(function() {
-            me.createBackgroundSensorPanel();
+            me.createCardBasedSensorPanel();
         }, 1000);
 
-        console.log('✅ V2 sub-panel added to existing Online navigation');
+        console.log('✅ V3 card-based sensor panel extension initialized');
     },
     
     addSubPanelToOnlineNavigation: function() {
@@ -27,10 +27,10 @@ Ext.define('Store.dashpanel.Module', {
         if (skeleton && skeleton.navigation && skeleton.navigation.online) {
             var onlinePanel = skeleton.navigation.online;
             
-            console.log('Found existing Online panel, adding Dashboard sub-panel...');
+            console.log('Found existing Online panel, adding Sensor Monitor sub-panel...');
             
             // Create vehicle tree sub-panel UNDER existing Online tree
-            var dashboardSubPanel = Ext.create('Store.dashpanel.view.Navigation', {
+            var sensorSubPanel = Ext.create('Store.dashpanel.view.Navigation', {
                 title: 'Sensor Monitor',
                 iconCls: 'fa fa-tachometer-alt',
                 height: 300,
@@ -38,47 +38,44 @@ Ext.define('Store.dashpanel.Module', {
                 split: true
             });
             
-            // Add sub-panel to existing Online navigation (LEFT panel, not top)
+            // Add sub-panel to existing Online navigation
             if (onlinePanel.add) {
-                onlinePanel.add(dashboardSubPanel);
-                console.log('✅ Dashboard sub-panel added UNDER Online tree (left panel)');
+                onlinePanel.add(sensorSubPanel);
+                console.log('✅ Sensor Monitor sub-panel added UNDER Online tree');
                 
-                // Listen for tab selection to show/hide docked panel with enhanced debugging
+                // Listen for tab selection to show/hide docked panel
                 if (onlinePanel.on) {
                     console.log('🔍 Setting up tabchange listener on Online panel');
                     onlinePanel.on('tabchange', function(tabPanel, newCard, oldCard) {
                         console.log('🔍 Tab changed from:', oldCard ? oldCard.title : 'none', 'to:', newCard ? newCard.title : 'none');
-                        console.log('🔍 backgroundPanel available:', !!me.backgroundPanel);
+                        console.log('🔍 cardSensorPanel available:', !!me.cardSensorPanel);
                         
-                        if (newCard && newCard.title === 'Sensor Monitor' && me.backgroundPanel) {
-                            console.log('🔧 Sensor Monitor tab selected - showing docked panel');
-                            me.backgroundPanel.setHidden(false);
-                            me.backgroundPanel.show();
-                            console.log('✅ Docked panel should now be visible');
-                        } else if (me.backgroundPanel && !me.backgroundPanel.hidden) {
-                            console.log('🔧 Other tab selected - hiding docked panel');
-                            me.backgroundPanel.setHidden(true);
-                            me.backgroundPanel.hide();
-                            console.log('✅ Docked panel hidden');
+                        if (newCard && newCard.title === 'Sensor Monitor' && me.cardSensorPanel) {
+                            console.log('🔧 Sensor Monitor tab selected - showing card-based panel');
+                            me.cardSensorPanel.setHidden(false);
+                            me.cardSensorPanel.show();
+                        } else if (me.cardSensorPanel && !me.cardSensorPanel.hidden) {
+                            console.log('🔧 Other tab selected - hiding card-based panel');
+                            me.cardSensorPanel.setHidden(true);
+                            me.cardSensorPanel.hide();
                         }
                     });
                     
-                    // Also listen for when the sub-panel itself becomes active
-                    dashboardSubPanel.on('activate', function() {
-                        console.log('🔧 Dashboard sub-panel activated directly');
-                        if (me.backgroundPanel) {
-                            me.backgroundPanel.setHidden(false);
-                            me.backgroundPanel.show();
-                            console.log('✅ Docked panel shown via sub-panel activation');
+                    // Listen for sub-panel activation
+                    sensorSubPanel.on('activate', function() {
+                        console.log('🔧 Sensor Monitor sub-panel activated');
+                        if (me.cardSensorPanel) {
+                            me.cardSensorPanel.setHidden(false);
+                            me.cardSensorPanel.show();
+                            console.log('✅ Card-based panel shown via sub-panel activation');
                         }
                     });
                     
-                    dashboardSubPanel.on('deactivate', function() {
-                        console.log('🔧 Dashboard sub-panel deactivated');
-                        if (me.backgroundPanel) {
-                            me.backgroundPanel.setHidden(true);
-                            me.backgroundPanel.hide();
-                            console.log('✅ Docked panel hidden via sub-panel deactivation');
+                    sensorSubPanel.on('deactivate', function() {
+                        console.log('🔧 Sensor Monitor sub-panel deactivated');
+                        if (me.cardSensorPanel) {
+                            me.cardSensorPanel.setHidden(true);
+                            me.cardSensorPanel.hide();
                         }
                     });
                 } else {
@@ -93,216 +90,138 @@ Ext.define('Store.dashpanel.Module', {
         }
     },
     
-    createBackgroundSensorPanel: function() {
+    createCardBasedSensorPanel: function() {
         var me = this;
         
-        console.log('📊 Creating docked sensor panel (within mapframe)...');
+        console.log('📊 Creating card-based sensor panel (docked to mapframe)...');
         
-        // Create sensor panel to dock within mapframe (like reference pattern)
-        var dockedSensorPanel = Ext.create('Ext.panel.Panel', {
-            title: '🔧 Sensor Monitor - Sensor Data',
+        // Create card-based sensor panel
+        var cardSensorPanel = Ext.create('Ext.panel.Panel', {
+            title: 'Sensor Monitor - Sensor Data',
             height: 325,
-            dock: 'bottom',  // Force bottom docking
+            dock: 'bottom',
             split: true,
             resizable: true,
             collapsible: true,
             collapsed: false,
-            collapseFirst: true,  // Move ExtJS collapse tool to LEFT side (before title)
-            animCollapse: 300,  // Smooth animation duration (300ms)
-            collapseDirection: 'bottom',  // Collapse towards bottom
-            titleCollapse: true,  // Allow clicking title to collapse
+            collapseFirst: true,  // Move collapse tool to LEFT
+            animCollapse: 300,
+            collapseDirection: 'bottom',
+            titleCollapse: true,
             layout: 'fit',
-            hidden: true,  // Start hidden - show only when navigation tab is clicked
-            id: 'dashpanel-sensor-panel',
+            hidden: true,
+            id: 'dashpanel-v3-sensor-panel',
             
-            // Configure header to support collapseFirst positioning
+            // Configure header for left-positioned collapse
             header: {
-                titlePosition: 1  // Title after tools (tools appear first/left)
+                titlePosition: 1  // Title after tools (collapse button on left)
             },
             
-            // Manual toggle tool commented out to avoid duplicate with ExtJS auto-collapse
-            /* tools: [{
-                type: 'toggle',
-                tooltip: 'Expand/Collapse Panel',
-                handler: function(event, toolEl, panel) {
-                    if (panel.collapsed) {
-                        panel.expand();
-                        console.log('🔼 Panel expanded via tool');
-                    } else {
-                        panel.collapse();
-                        console.log('🔽 Panel collapsed via tool');
-                    }
-                }
-            }], */
-            
-            // Smooth animation listeners
-            listeners: {
-                beforecollapse: function() {
-                    console.log('🔽 Panel collapsing...');
-                    return true; // Allow collapse
-                },
-                collapse: function() {
-                    console.log('✅ Panel collapsed with animation');
-                },
-                beforeexpand: function() {
-                    console.log('🔼 Panel expanding...');
-                    return true; // Allow expand
-                },
-                expand: function() {
-                    console.log('✅ Panel expanded with animation');
-                }
-            },
-            
+            // Card-based layout container
             items: [{
-                xtype: 'grid',
-                store: Ext.create('Ext.data.Store', {
-                    fields: ['sensor_name', 'sensor_type', 'current_value', 'unit', 'status', 'last_update'],
-                    data: []
-                }),
-                columns: [{
-                    text: 'Sensor Name',
-                    dataIndex: 'sensor_name',
-                    flex: 2,
-                    renderer: function(value, meta, record) {
-                        var iconClass = me.getSensorIcon(record.get('sensor_type'));
-                        return '<i class="' + iconClass + '"></i> ' + value;
-                    }
-                }, {
-                    text: 'Value',
-                    dataIndex: 'current_value',
-                    width: 120,
-                    renderer: function(value, meta, record) {
-                        var unit = record.get('unit') || '';
-                        var status = record.get('status');
-                        
-                        var color = status === 'critical' ? '#ff0000' :
-                                   status === 'warning' ? '#ff8c00' : '#008000';
-                        
-                        var formattedValue = typeof value === 'number' ?
-                                           Ext.util.Format.number(value, '0.##') : value;
-                        
-                        return '<span style="color: ' + color + '; font-weight: bold;">' + formattedValue + ' ' + unit + '</span>';
-                    }
-                }, {
-                    text: 'Status',
-                    dataIndex: 'status',
-                    width: 80,
-                    renderer: function(value) {
-                        var icon = value === 'critical' ? 'fa fa-times-circle' :
-                                  value === 'warning' ? 'fa fa-exclamation-triangle' : 'fa fa-check-circle';
-                        var color = value === 'critical' ? 'red' :
-                                   value === 'warning' ? 'orange' : 'green';
-                        return '<i class="' + icon + '" style="color: ' + color + ';"></i>';
-                    }
-                }, {
-                    text: 'Last Update',
-                    dataIndex: 'last_update',
-                    width: 120,
-                    renderer: function(value) {
-                        return value ? Ext.Date.format(new Date(value), 'H:i:s') : '-';
-                    }
-                }],
-                viewConfig: {
-                    emptyText: 'Select a vehicle from Sensor Monitor navigation to view sensors',
-                    deferEmptyText: false
-                }
+                xtype: 'container',
+                layout: {
+                    type: 'column',  // Column layout for card flow
+                    wrap: true      // Allow wrapping to next line
+                },
+                scrollable: true,
+                autoScroll: true,
+                items: [],  // Will be populated with sensor cards
+                itemId: 'sensorCardContainer'
             }],
             
-            // Removed tbar - no refresh button or real-time text needed
+            listeners: {
+                beforecollapse: function() {
+                    console.log('🔽 Card panel collapsing...');
+                },
+                collapse: function() {
+                    console.log('✅ Card panel collapsed');
+                },
+                beforeexpand: function() {
+                    console.log('🔼 Card panel expanding...');
+                },
+                expand: function() {
+                    console.log('✅ Card panel expanded');
+                }
+            }
         });
         
-        // Add docked panel to mapframe (like reference pattern - BOTTOM placement)
+        // Add docked panel to mapframe
         try {
             if (skeleton && skeleton.mapframe) {
-                console.log('🔍 mapframe type:', skeleton.mapframe.$className);
-                console.log('🔍 mapframe layout:', skeleton.mapframe.layout);
-                console.log('🔍 mapframe methods:', Object.keys(skeleton.mapframe).slice(0, 15));
+                console.log('🔍 mapframe available for card panel docking');
                 
-                // Find the main map panel to dock to its bottom
-                var mapFramePanel = skeleton.mapframe.down('panel'); // First panel in mapframe
-                
-                if (mapFramePanel) {
-                    console.log('🔍 Found mapframe panel:', mapFramePanel.$className);
-                    console.log('🔍 Panel layout:', mapFramePanel.layout);
-                    
-                    // Force bottom docking with explicit configuration
-                    dockedSensorPanel.dock = 'bottom';
-                    
-                    if (mapFramePanel.addDocked) {
-                        mapFramePanel.addDocked(dockedSensorPanel);
-                        console.log('✅ Docked sensor panel to BOTTOM of map panel');
-                        me.backgroundPanel = dockedSensorPanel;
-                    } else {
-                        console.warn('❌ addDocked not available on map panel');
-                    }
+                var mapFramePanel = skeleton.mapframe.down('panel');
+                if (mapFramePanel && mapFramePanel.addDocked) {
+                    mapFramePanel.addDocked(cardSensorPanel);
+                    console.log('✅ Card-based sensor panel docked to bottom of mapframe');
+                    me.cardSensorPanel = cardSensorPanel;
                 } else if (skeleton.mapframe.addDocked) {
-                    // Direct docking to mapframe itself
-                    skeleton.mapframe.addDocked(dockedSensorPanel);
-                    console.log('✅ Direct docking to mapframe');
-                    me.backgroundPanel = dockedSensorPanel;
+                    skeleton.mapframe.addDocked(cardSensorPanel);
+                    console.log('✅ Card-based panel direct docking to mapframe');
+                    me.cardSensorPanel = cardSensorPanel;
                 } else {
-                    console.warn('❌ No docking method available');
-                    console.log('Available mapframe methods:', Object.keys(skeleton.mapframe));
+                    console.warn('❌ No docking method available for card panel');
                 }
             }
         } catch (e) {
-            console.error('❌ Failed to dock sensor panel:', e.message);
-            console.error('Available methods:', skeleton.mapframe ? Object.keys(skeleton.mapframe).slice(0, 10) : 'undefined');
+            console.error('❌ Failed to dock card-based sensor panel:', e.message);
         }
         
-        // Store reference for navigation access
-        me.backgroundPanel = dockedSensorPanel;
-        
-        // Panel starts hidden - will be shown when Sensor Monitor navigation tab is clicked
-        console.log('✅ Docked sensor panel created (hidden) - ready for navigation activation');
+        console.log('✅ V3 card-based sensor panel ready - waiting for vehicle selection');
     },
     
     // Called from Navigation component when vehicle is selected
     showVehicleSensors: function(vehicleId, vehicleName, vehicleRecord) {
         var me = this;
         
-        console.log('🚗 Vehicle selected from navigation:', vehicleName, 'ID:', vehicleId);
+        console.log('🚗 Vehicle selected for card display:', vehicleName, 'ID:', vehicleId);
         
         me.currentVehicleId = vehicleId;
         me.currentVehicleName = vehicleName;
         me.currentVehicleRecord = vehicleRecord;
         
-        // Update panel title and load data - NO automatic expand/collapse
-        if (me.backgroundPanel) {
-            me.backgroundPanel.setTitle('🔧 Sensor Monitor - ' + vehicleName + ' (Real-time)');
+        // Update panel title and load card data
+        if (me.cardSensorPanel) {
+            me.cardSensorPanel.setTitle('Sensor Monitor - ' + vehicleName);
             
-            // Load sensor data for this specific vehicle (no expand/collapse)
-            me.loadVehicleSensors(vehicleId);
+            // Load sensor data into cards (no table)
+            me.loadVehicleSensorCards(vehicleId);
             me.startVehicleRefresh(vehicleId);
             
-            console.log('✅ Vehicle data loaded - panel state unchanged (manual expand/collapse)');
+            console.log('✅ Vehicle data loaded into sensor cards');
         }
     },
     
-    loadVehicleSensors: function(vehicleId) {
+    loadVehicleSensorCards: function(vehicleId) {
         var me = this;
         
-        console.log('🔄 Loading sensor data for vehicle:', vehicleId);
+        if (!me.currentVehicleId) {
+            return;
+        }
         
+        console.log('🔄 Loading sensor data for card layout, vehicle:', me.currentVehicleId);
+        
+        // Use same API as V1/V2
         Ext.Ajax.request({
             url: '/backend/ax/current_data.php',
             success: function(response) {
                 try {
                     var data = Ext.decode(response.responseText);
-                    me.processVehicleSensorData(data, vehicleId);
+                    me.processSensorDataCards(data);
                 } catch (e) {
                     console.error('❌ API parse error:', e);
-                    me.tryExternalAPI(vehicleId);
+                    me.tryExternalAPI();
                 }
             },
-            failure: function() {
+            failure: function(response) {
                 console.warn('❌ Backend API failed, trying external...');
-                me.tryExternalAPI(vehicleId);
+                me.tryExternalAPI();
             }
         });
     },
     
-    tryExternalAPI: function(vehicleId) {
+    tryExternalAPI: function() {
         var me = this;
         
         Ext.Ajax.request({
@@ -310,79 +229,170 @@ Ext.define('Store.dashpanel.Module', {
             success: function(response) {
                 try {
                     var data = Ext.decode(response.responseText);
-                    me.processVehicleSensorData(data, vehicleId);
+                    me.processSensorDataCards(data);
                 } catch (e) {
                     console.error('❌ External API parse error:', e);
-                    me.showNoSensorData();
+                    me.showNoSensorCards();
                 }
             },
-            failure: function() {
-                console.error('❌ External API failed');
-                me.showNoSensorData();
+            failure: function(response) {
+                console.error('❌ External API failed:', response.status);
+                me.showNoSensorCards();
             }
         });
     },
     
-    processVehicleSensorData: function(data, vehicleId) {
+    processSensorDataCards: function(data) {
         var me = this;
-        var sensorArray = [];
+        var sensorCards = [];
+        
+        console.log('Processing sensor data for card layout...');
         
         if (data && data.c === 0 && Ext.isArray(data.objects)) {
+            // Find vehicle by ID
             var vehicle = null;
             Ext.each(data.objects, function(obj) {
-                if (obj.id == vehicleId) {
+                if (obj.id == me.currentVehicleId || obj.veh_id == me.currentVehicleId) {
                     vehicle = obj;
                     return false;
                 }
             });
             
-            if (vehicle) {
-                console.log('✅ Found vehicle:', vehicle.name);
-                
-                // Add vehicle status sensors
-                sensorArray.push({
-                    sensor_name: 'Vehicle Speed',
-                    sensor_type: 'speed',
-                    current_value: vehicle.last_event ? vehicle.last_event.speed || 0 : 0,
+            if (!vehicle) {
+                console.error('❌ Vehicle not found:', me.currentVehicleId);
+                me.showNoSensorCards();
+                return;
+            }
+            
+            console.log('✅ Found vehicle data for cards:', vehicle.name);
+            
+            // Add basic vehicle sensors as cards
+            if (vehicle.last_event && vehicle.last_event.speed !== undefined) {
+                sensorCards.push(me.createSensorCard({
+                    name: 'Vehicle Speed',
+                    type: 'speed',
+                    value: vehicle.last_event.speed,
                     unit: 'km/h',
-                    status: 'normal',
-                    last_update: new Date(vehicle.unixtimestamp * 1000)
-                });
-                
-                sensorArray.push({
-                    sensor_name: 'Engine Status',
-                    sensor_type: 'engine',
-                    current_value: vehicle.firing ? 'ON' : 'OFF',
+                    status: vehicle.last_event.speed > 80 ? 'warning' : 'normal',
+                    icon: 'fa fa-speedometer'
+                }));
+            }
+            
+            if (vehicle.firing !== undefined) {
+                sensorCards.push(me.createSensorCard({
+                    name: 'Engine Status',
+                    type: 'engine',
+                    value: vehicle.firing ? 'ON' : 'OFF',
                     unit: '',
                     status: 'normal',
-                    last_update: new Date(vehicle.unixtimestamp * 1000)
-                });
+                    icon: 'fa fa-cog'
+                }));
+            }
+            
+            // Process all sensors as cards
+            if (vehicle.sensors && typeof vehicle.sensors === 'object') {
+                console.log('Processing', Object.keys(vehicle.sensors).length, 'sensors as cards...');
                 
-                // Add all sensors for this specific vehicle
-                if (vehicle.sensors) {
-                    Ext.Object.each(vehicle.sensors, function(name, value) {
-                        var parts = value.split('|');
-                        if (parts.length >= 4) {
-                            sensorArray.push({
-                                sensor_name: name,
-                                sensor_type: me.determineSensorType(name),
-                                current_value: parseFloat(parts[3]),
-                                unit: me.extractUnit(parts[0]),
-                                status: me.calculateSensorStatus(parseFloat(parts[3]), me.determineSensorType(name)),
-                                last_update: new Date(parseInt(parts[1]) * 1000)
-                            });
-                        }
-                    });
-                }
+                Ext.Object.each(vehicle.sensors, function(sensorName, sensorValue) {
+                    var parts = sensorValue.split('|');
+                    if (parts.length >= 4) {
+                        var humanValue = parts[0];
+                        var digitalValue = parseFloat(parts[3]);
+                        var sensorType = me.determineSensorType(sensorName);
+                        var status = me.calculateSensorStatus(digitalValue, sensorType);
+                        
+                        sensorCards.push(me.createSensorCard({
+                            name: sensorName,
+                            type: sensorType,
+                            value: digitalValue,
+                            unit: me.extractUnit(humanValue),
+                            status: status,
+                            icon: me.getSensorIcon(sensorType)
+                        }));
+                    }
+                });
             }
         }
         
-        console.log('✅ Processed', sensorArray.length, 'sensors for vehicle:', vehicleId);
+        if (sensorCards.length === 0) {
+            me.showNoSensorCards();
+            return;
+        }
         
-        if (me.backgroundPanel) {
-            var grid = me.backgroundPanel.down('grid');
-            if (grid) {
-                grid.getStore().loadData(sensorArray);
+        console.log('✅ Created', sensorCards.length, 'sensor cards');
+        me.updateSensorCards(sensorCards);
+    },
+    
+    createSensorCard: function(sensor) {
+        var me = this;
+        
+        // Get status color
+        var statusColor = '#008000';  // green default
+        if (sensor.status === 'warning') statusColor = '#ff8c00';
+        else if (sensor.status === 'critical') statusColor = '#ff0000';
+        
+        // Create card component
+        return {
+            xtype: 'container',
+            columnWidth: 0.33,  // 3 cards per row
+            padding: '5px',
+            html: '<div style="' +
+                  'border: 2px solid ' + statusColor + '; ' +
+                  'border-radius: 8px; ' +
+                  'padding: 10px; ' +
+                  'background: white; ' +
+                  'text-align: center; ' +
+                  'box-shadow: 0 2px 4px rgba(0,0,0,0.1); ' +
+                  'min-height: 80px; ' +
+                  'display: flex; ' +
+                  'flex-direction: column; ' +
+                  'justify-content: center;' +
+                  '">' +
+                  '<div style="font-size: 24px; color: ' + statusColor + '; margin-bottom: 5px;">' +
+                  '<i class="' + sensor.icon + '"></i>' +
+                  '</div>' +
+                  '<div style="font-weight: bold; font-size: 12px; margin-bottom: 3px;">' +
+                  sensor.name +
+                  '</div>' +
+                  '<div style="font-size: 18px; font-weight: bold; color: ' + statusColor + ';">' +
+                  (typeof sensor.value === 'number' ? Ext.util.Format.number(sensor.value, '0.##') : sensor.value) +
+                  ' ' + (sensor.unit || '') +
+                  '</div>' +
+                  '</div>'
+        };
+    },
+    
+    updateSensorCards: function(sensorCards) {
+        var me = this;
+        
+        if (me.cardSensorPanel) {
+            var cardContainer = me.cardSensorPanel.down('[itemId=sensorCardContainer]');
+            if (cardContainer) {
+                // Clear existing cards
+                cardContainer.removeAll(true);
+                
+                // Add new sensor cards
+                cardContainer.add(sensorCards);
+                console.log('✅ Updated', sensorCards.length, 'sensor cards in container');
+            }
+        }
+    },
+    
+    showNoSensorCards: function() {
+        var me = this;
+        
+        if (me.cardSensorPanel) {
+            var cardContainer = me.cardSensorPanel.down('[itemId=sensorCardContainer]');
+            if (cardContainer) {
+                cardContainer.removeAll(true);
+                cardContainer.add({
+                    xtype: 'container',
+                    html: '<div style="text-align: center; padding: 40px; color: #666;">' +
+                          '<i class="fa fa-exclamation-triangle" style="font-size: 48px; color: #ff8c00;"></i>' +
+                          '<h3>No Sensor Data Available</h3>' +
+                          '<p>Unable to load sensor data for this vehicle</p>' +
+                          '</div>'
+                });
             }
         }
     },
@@ -393,10 +403,10 @@ Ext.define('Store.dashpanel.Module', {
         me.stopVehicleRefresh();
         
         me.refreshTask = setInterval(function() {
-            me.loadVehicleSensors(vehicleId);
+            me.loadVehicleSensorCards(vehicleId);
         }, 500);
         
-        console.log('🔄 Real-time refresh started for vehicle:', vehicleId);
+        console.log('🔄 Real-time card refresh started for vehicle:', vehicleId);
     },
     
     stopVehicleRefresh: function() {
@@ -408,70 +418,65 @@ Ext.define('Store.dashpanel.Module', {
         }
     },
     
-    showNoSensorData: function() {
-        var me = this;
+    // Helper methods (same as V1/V2)
+    determineSensorType: function(sensorName) {
+        if (!sensorName) return 'generic';
         
-        if (me.backgroundPanel) {
-            var grid = me.backgroundPanel.down('grid');
-            if (grid) {
-                grid.getStore().loadData([{
-                    sensor_name: 'No Data Available',
-                    sensor_type: 'error',
-                    current_value: 'Unable to load sensor data',
-                    unit: '',
-                    status: 'critical',
-                    last_update: new Date()
-                }]);
-            }
-        }
-    },
-    
-    // Helper methods
-    determineSensorType: function(name) {
-        if (!name) return 'generic';
-        var n = name.toLowerCase();
-        if (n.includes('temp')) return 'temperature';
-        if (n.includes('fuel') || n.includes('level')) return 'level';
-        if (n.includes('voltage')) return 'voltage';
-        if (n.includes('pressure')) return 'pressure';
-        if (n.includes('speed')) return 'speed';
+        var name = sensorName.toLowerCase();
+        if (name.includes('температур') || name.includes('temp')) return 'temperature';
+        if (name.includes('давлен') || name.includes('pressure')) return 'pressure';
+        if (name.includes('топлив') || name.includes('fuel') || name.includes('уровень')) return 'level';
+        if (name.includes('напряж') || name.includes('voltage') || name.includes('вольт')) return 'voltage';
+        if (name.includes('скорост') || name.includes('speed')) return 'speed';
+        if (name.includes('нагрузк') || name.includes('вес') || name.includes('load') || name.includes('weight')) return 'weight';
+        
         return 'generic';
     },
     
     extractUnit: function(humValue) {
         if (!humValue) return '';
-        var matches = humValue.toString().match(/([a-zA-Z°%]+)$/);
+        
+        var matches = humValue.toString().match(/([a-zA-Zа-яА-Я°%/]+)$/);
         return matches ? matches[1] : '';
     },
     
     calculateSensorStatus: function(value, sensorType) {
-        if (value === null || value === undefined) return 'normal';
+        if (value === null || value === undefined) return 'unknown';
         
         switch (sensorType) {
             case 'temperature':
                 if (value > 100 || value < -20) return 'critical';
                 if (value > 80 || value < 0) return 'warning';
                 return 'normal';
+                
             case 'voltage':
                 if (value > 15 || value < 10) return 'critical';
                 if (value > 14 || value < 11) return 'warning';
                 return 'normal';
+                
+            case 'pressure':
+                if (value > 100 || value < 0) return 'critical';
+                if (value > 80 || value < 10) return 'warning';
+                return 'normal';
+                
             case 'level':
                 if (value < 5) return 'critical';
                 if (value < 15) return 'warning';
                 return 'normal';
+                
             default:
                 return 'normal';
         }
     },
     
-    getSensorIcon: function(type) {
-        switch(type) {
+    getSensorIcon: function(sensorType) {
+        switch(sensorType) {
             case 'temperature': return 'fa fa-thermometer-half';
+            case 'pressure': return 'fa fa-tachometer-alt';
             case 'level': return 'fa fa-battery-half';
             case 'voltage': return 'fa fa-bolt';
-            case 'pressure': return 'fa fa-tachometer-alt';
             case 'speed': return 'fa fa-speedometer';
+            case 'weight': return 'fa fa-weight';
             case 'engine': return 'fa fa-cog';
             default: return 'fa fa-microchip';
         }
