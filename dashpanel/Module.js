@@ -114,21 +114,17 @@ Ext.define('Store.dashpanel.Module', {
             hidden: true,  // Start hidden - show only when navigation tab is clicked
             id: 'dashpanel-sensor-panel',
             
-            // Tools on LEFT side (before title) - like reference pattern
+            // Single toggle tool on LEFT side (like reference pattern)
             tools: [{
-                type: 'down',  // Down arrow for expand (when collapsed)
-                tooltip: 'Expand Panel',
-                handler: function() {
-                    if (dockedSensorPanel.collapsed) {
-                        dockedSensorPanel.expand();
-                    }
-                }
-            }, {
-                type: 'up',   // Up arrow for collapse (when expanded)
-                tooltip: 'Collapse Panel',
-                handler: function() {
-                    if (!dockedSensorPanel.collapsed) {
-                        dockedSensorPanel.collapse();
+                type: 'toggle',
+                tooltip: 'Expand/Collapse Panel',
+                handler: function(event, toolEl, panel) {
+                    if (panel.collapsed) {
+                        panel.expand();
+                        console.log('🔼 Panel expanded via tool');
+                    } else {
+                        panel.collapse();
+                        console.log('🔽 Panel collapsed via tool');
                     }
                 }
             }],
