@@ -107,6 +107,8 @@ Ext.define('Store.dashpanel.Module', {
             resizable: true,
             collapsible: true,
             collapsed: false,
+            collapseFirst: true,  // Move ExtJS collapse tool to LEFT side (before title)
+            collapseMode : 'header',
             animCollapse: 300,  // Smooth animation duration (300ms)
             collapseDirection: 'bottom',  // Collapse towards bottom
             titleCollapse: true,  // Allow clicking title to collapse
@@ -114,8 +116,8 @@ Ext.define('Store.dashpanel.Module', {
             hidden: true,  // Start hidden - show only when navigation tab is clicked
             id: 'dashpanel-sensor-panel',
             
-            // Single toggle tool on LEFT side (like reference pattern)
-            tools: [{
+            // Manual toggle tool commented out to avoid duplicate with ExtJS auto-collapse
+            /* tools: [{
                 type: 'toggle',
                 tooltip: 'Expand/Collapse Panel',
                 handler: function(event, toolEl, panel) {
@@ -127,7 +129,7 @@ Ext.define('Store.dashpanel.Module', {
                         console.log('🔽 Panel collapsed via tool');
                     }
                 }
-            }],
+            }], */
             
             // Smooth animation listeners
             listeners: {
