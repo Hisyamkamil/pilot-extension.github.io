@@ -108,13 +108,47 @@ Ext.define('Store.dashpanel.Module', {
             animCollapse: 300,
             collapseDirection: 'bottom',
             titleCollapse: true,
+            collapseMode: 'mini',  // Mini collapse mode for compact header
             layout: 'fit',
             hidden: true,
             id: 'dashpanel-v3-sensor-panel',
             
-            // Configure header for left-positioned collapse
+            // Configure header for left-positioned collapse and compact sizing
             header: {
-                titlePosition: 1  // Title after tools (collapse button on left)
+                titlePosition: 1,  // Title after tools (collapse button on left)
+                cls: 'dashpanel-v3-compact-header'  // Custom CSS class for compact styling
+            },
+            
+            // Configure collapsed state styling
+            listeners: {
+                collapse: function(panel) {
+                    // Make header compact when collapsed (like follow_text button)
+                    var header = panel.getHeader();
+                    if (header) {
+                        header.setStyle({
+                            'width': 'auto',
+                            'max-width': '300px',
+                            'display': 'inline-block',
+                            'position': 'relative',
+                            'float': 'left'
+                        });
+                        console.log('✅ Panel collapsed with compact header');
+                    }
+                },
+                expand: function(panel) {
+                    // Restore full width when expanded
+                    var header = panel.getHeader();
+                    if (header) {
+                        header.setStyle({
+                            'width': '100%',
+                            'max-width': 'none',
+                            'display': 'block',
+                            'position': 'static',
+                            'float': 'none'
+                        });
+                        console.log('✅ Panel expanded with full header');
+                    }
+                }
             },
             
             // Multi-column layout container (like newspaper columns)
