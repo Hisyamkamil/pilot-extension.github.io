@@ -107,8 +107,8 @@ Ext.define('Store.dashpanel.Module', {
             resizable: true,
             collapsible: true,
             collapsed: false,
-            collapseFirst: true,  // Move ExtJS collapse tool to LEFT side (before title)
-            collapseMode : 'header',
+            collapseFirst: false,  // Move ExtJS collapse tool to LEFT side (before title)
+            //collapseMode : 'header',
             animCollapse: 300,  // Smooth animation duration (300ms)
             collapseDirection: 'bottom',  // Collapse towards bottom
             titleCollapse: true,  // Allow clicking title to collapse
