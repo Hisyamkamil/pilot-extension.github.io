@@ -117,17 +117,20 @@ Ext.define('Store.dashpanel.Module', {
                 titlePosition: 1  // Title after tools (collapse button on left)
             },
             
-            // Card-based layout container
+            // Multi-column layout container (like newspaper columns)
             items: [{
                 xtype: 'container',
-                layout: {
-                    type: 'column',  // Column layout for card flow
-                    wrap: true      // Allow wrapping to next line
-                },
+                cls: 'dashpanel-v3-sensor-columns',
                 scrollable: true,
                 autoScroll: true,
-                items: [],  // Will be populated with sensor cards
-                itemId: 'sensorCardContainer'
+                html: '<div id="dashpanel-v3-columns-container" style="' +
+                      'display: flex; ' +
+                      'flex-wrap: wrap; ' +
+                      'align-items: flex-start; ' +
+                      'padding: 10px; ' +
+                      'gap: 20px;' +
+                      '"></div>',
+                itemId: 'sensorColumnContainer'
             }],
             
             listeners: {
@@ -232,12 +235,12 @@ Ext.define('Store.dashpanel.Module', {
                     me.processSensorDataCards(data);
                 } catch (e) {
                     console.error('❌ External API parse error:', e);
-                    me.showNoSensorCards();
+                    me.showNoSensorColumns();
                 }
             },
             failure: function(response) {
                 console.error('❌ External API failed:', response.status);
-                me.showNoSensorCards();
+                me.showNoSensorColumns();
             }
         });
     },
@@ -260,7 +263,7 @@ Ext.define('Store.dashpanel.Module', {
             
             if (!vehicle) {
                 console.error('❌ Vehicle not found:', me.currentVehicleId);
-                me.showNoSensorCards();
+                me.showNoSensorColumns();
                 return;
             }
             
@@ -268,7 +271,7 @@ Ext.define('Store.dashpanel.Module', {
             
             // Add basic vehicle sensors as cards
             if (vehicle.last_event && vehicle.last_event.speed !== undefined) {
-                sensorCards.push(me.createSensorCard({
+                sensorCards.push(me.createSensorRow({
                     name: 'Vehicle Speed',
                     type: 'speed',
                     value: vehicle.last_event.speed,
@@ -279,7 +282,7 @@ Ext.define('Store.dashpanel.Module', {
             }
             
             if (vehicle.firing !== undefined) {
-                sensorCards.push(me.createSensorCard({
+                sensorCards.push(me.createSensorRow({
                     name: 'Engine Status',
                     type: 'engine',
                     value: vehicle.firing ? 'ON' : 'OFF',
@@ -301,7 +304,7 @@ Ext.define('Store.dashpanel.Module', {
                         var sensorType = me.determineSensorType(sensorName);
                         var status = me.calculateSensorStatus(digitalValue, sensorType);
                         
-                        sensorCards.push(me.createSensorCard({
+                        sensorCards.push(me.createSensorRow({
                             name: sensorName,
                             type: sensorType,
                             value: digitalValue,
@@ -315,15 +318,15 @@ Ext.define('Store.dashpanel.Module', {
         }
         
         if (sensorCards.length === 0) {
-            me.showNoSensorCards();
+            me.showNoSensorColumns();
             return;
         }
         
-        console.log('✅ Created', sensorCards.length, 'sensor cards');
-        me.updateSensorCards(sensorCards);
+        console.log('✅ Created', sensorCards.length, 'sensor rows for multi-column layout');
+        me.updateSensorColumns(sensorCards);
     },
     
-    createSensorCard: function(sensor) {
+    createSensorRow: function(sensor) {
         var me = this;
         
         // Get status color
@@ -331,68 +334,97 @@ Ext.define('Store.dashpanel.Module', {
         if (sensor.status === 'warning') statusColor = '#ff8c00';
         else if (sensor.status === 'critical') statusColor = '#ff0000';
         
-        // Create card component
-        return {
-            xtype: 'container',
-            columnWidth: 0.33,  // 3 cards per row
-            padding: '5px',
-            html: '<div style="' +
-                  'border: 2px solid ' + statusColor + '; ' +
-                  'border-radius: 8px; ' +
-                  'padding: 10px; ' +
-                  'background: white; ' +
-                  'text-align: center; ' +
-                  'box-shadow: 0 2px 4px rgba(0,0,0,0.1); ' +
-                  'min-height: 80px; ' +
-                  'display: flex; ' +
-                  'flex-direction: column; ' +
-                  'justify-content: center;' +
-                  '">' +
-                  '<div style="font-size: 24px; color: ' + statusColor + '; margin-bottom: 5px;">' +
-                  '<i class="' + sensor.icon + '"></i>' +
-                  '</div>' +
-                  '<div style="font-weight: bold; font-size: 12px; margin-bottom: 3px;">' +
-                  sensor.name +
-                  '</div>' +
-                  '<div style="font-size: 18px; font-weight: bold; color: ' + statusColor + ';">' +
-                  (typeof sensor.value === 'number' ? Ext.util.Format.number(sensor.value, '0.##') : sensor.value) +
-                  ' ' + (sensor.unit || '') +
-                  '</div>' +
-                  '</div>'
-        };
+        // Format value
+        var formattedValue = typeof sensor.value === 'number' ?
+                           Ext.util.Format.number(sensor.value, '0.##') : sensor.value;
+        
+        // Create compact row: {icon} {name} {value} {unit}
+        return '<div style="' +
+               'display: flex; ' +
+               'align-items: center; ' +
+               'padding: 3px 0; ' +
+               'border-bottom: 1px solid #eee; ' +
+               'font-size: 11px; ' +
+               'line-height: 1.2;' +
+               '">' +
+               '<i class="' + sensor.icon + '" style="' +
+               'color: ' + statusColor + '; ' +
+               'width: 16px; ' +
+               'margin-right: 6px; ' +
+               'font-size: 12px;' +
+               '"></i>' +
+               '<span style="' +
+               'flex: 1; ' +
+               'font-weight: 500; ' +
+               'color: #333; ' +
+               'overflow: hidden; ' +
+               'text-overflow: ellipsis; ' +
+               'white-space: nowrap;' +
+               '">' + sensor.name + '</span>' +
+               '<span style="' +
+               'font-weight: bold; ' +
+               'color: ' + statusColor + '; ' +
+               'margin-left: 5px;' +
+               '">' + formattedValue + '</span>' +
+               '<span style="' +
+               'color: #666; ' +
+               'font-size: 10px; ' +
+               'margin-left: 2px;' +
+               '">' + (sensor.unit || '') + '</span>' +
+               '</div>';
     },
     
-    updateSensorCards: function(sensorCards) {
+    updateSensorColumns: function(sensorRows) {
         var me = this;
         
         if (me.cardSensorPanel) {
-            var cardContainer = me.cardSensorPanel.down('[itemId=sensorCardContainer]');
-            if (cardContainer) {
-                // Clear existing cards
-                cardContainer.removeAll(true);
+            var container = document.getElementById('dashpanel-v3-columns-container');
+            if (container) {
+                // Calculate how many sensors per column (aim for 3 columns)
+                var sensorsPerColumn = Math.ceil(sensorRows.length / 3);
+                var columnsHtml = '';
                 
-                // Add new sensor cards
-                cardContainer.add(sensorCards);
-                console.log('✅ Updated', sensorCards.length, 'sensor cards in container');
+                // Create 3 columns
+                for (var col = 0; col < 3; col++) {
+                    var startIdx = col * sensorsPerColumn;
+                    var endIdx = Math.min(startIdx + sensorsPerColumn, sensorRows.length);
+                    
+                    if (startIdx < sensorRows.length) {
+                        columnsHtml += '<div style="' +
+                                     'flex: 1; ' +
+                                     'min-width: 200px; ' +
+                                     'background: white; ' +
+                                     'border-radius: 6px; ' +
+                                     'padding: 8px; ' +
+                                     'box-shadow: 0 1px 3px rgba(0,0,0,0.1);' +
+                                     '">';
+                        
+                        // Add sensor rows to this column
+                        for (var i = startIdx; i < endIdx; i++) {
+                            columnsHtml += sensorRows[i];
+                        }
+                        
+                        columnsHtml += '</div>';
+                    }
+                }
+                
+                container.innerHTML = columnsHtml;
+                console.log('✅ Updated', sensorRows.length, 'sensors in', Math.min(3, Math.ceil(sensorRows.length / sensorsPerColumn)), 'columns');
             }
         }
     },
     
-    showNoSensorCards: function() {
+    showNoSensorColumns: function() {
         var me = this;
         
         if (me.cardSensorPanel) {
-            var cardContainer = me.cardSensorPanel.down('[itemId=sensorCardContainer]');
-            if (cardContainer) {
-                cardContainer.removeAll(true);
-                cardContainer.add({
-                    xtype: 'container',
-                    html: '<div style="text-align: center; padding: 40px; color: #666;">' +
-                          '<i class="fa fa-exclamation-triangle" style="font-size: 48px; color: #ff8c00;"></i>' +
-                          '<h3>No Sensor Data Available</h3>' +
-                          '<p>Unable to load sensor data for this vehicle</p>' +
-                          '</div>'
-                });
+            var container = document.getElementById('dashpanel-v3-columns-container');
+            if (container) {
+                container.innerHTML = '<div style="text-align: center; padding: 40px; color: #666;">' +
+                                    '<i class="fa fa-exclamation-triangle" style="font-size: 48px; color: #ff8c00;"></i>' +
+                                    '<h3>No Sensor Data Available</h3>' +
+                                    '<p>Unable to load sensor data for this vehicle</p>' +
+                                    '</div>';
             }
         }
     },
