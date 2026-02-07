@@ -1,305 +1,162 @@
-/* PILOT Dashdashpanel Extension V2 - Modal Window Styles */
+/* Dashpanel V3 - Multi-Column Sensor Display Styles */
 
-/* Modal window styling */
-#dashpanel-sensor-window {
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-    border-radius: 8px;
+/* Main sensor columns container */
+.dashpanel-v3-sensor-columns {
+    padding: 10px;
+    background: #f8f9fa;
 }
 
-#dashpanel-sensor-window .x-window-header {
-    background: linear-gradient(to bottom, #f8f9fa 0%, #e9ecef 100%);
-    border-bottom: 2px solid #dee2e6;
-    color: #495057;
+/* Individual column styling */
+.dashpanel-v3-column {
+    flex: 1;
+    min-width: 200px;
+    background: white;
+    border-radius: 6px;
+    padding: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    margin-right: 10px;
 }
 
-#dashpanel-sensor-window .x-window-header-title {
-    font-weight: 600;
-    color: #2c3e50;
+.dashpanel-v3-column:last-child {
+    margin-right: 0;
 }
 
-/* Vehicle info dashpanel at top of modal */
-.dashpanel-vehicle-info {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
-}
-
-/* Sensor grid styling in modal */
-#dashpanel-sensor-window .x-grid-header {
-    background: linear-gradient(to bottom, #f8f9fa 0%, #e9ecef 100%);
-    border-bottom: 2px solid #dee2e6;
-}
-
-#dashpanel-sensor-window .x-grid-header-ct .x-column-header {
-    font-weight: 600;
-    color: #495057;
-}
-
-/* Sensor value styling in modal */
-.dashpanel-sensor-value-normal {
-    color: #28a745;
-    font-weight: bold;
-    background: rgba(40, 167, 69, 0.1);
-    padding: 2px 6px;
-    border-radius: 4px;
-}
-
-.dashpanel-sensor-value-warning {
-    color: #ffc107;
-    font-weight: bold;
-    background: rgba(255, 193, 7, 0.1);
-    padding: 2px 6px;
-    border-radius: 4px;
-}
-
-.dashpanel-sensor-value-critical {
-    color: #dc3545;
-    font-weight: bold;
-    background: rgba(220, 53, 69, 0.1);
-    padding: 2px 6px;
-    border-radius: 4px;
-    animation: pulse-critical 1.5s ease-in-out infinite alternate;
-}
-
-/* Status indicators in modal */
-.dashpanel-status-indicator {
-    display: inline-flex;
+/* Individual sensor row */
+.dashpanel-v3-sensor-row {
+    display: flex;
     align-items: center;
-    gap: 5px;
-    padding: 3px 8px;
-    border-radius: 12px;
+    padding: 3px 0;
+    border-bottom: 1px solid #eee;
     font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-}
-
-.dashpanel-status-normal {
-    background: rgba(40, 167, 69, 0.15);
-    color: #155724;
-    border: 1px solid rgba(40, 167, 69, 0.3);
-}
-
-.dashpanel-status-warning {
-    background: rgba(255, 193, 7, 0.15);
-    color: #856404;
-    border: 1px solid rgba(255, 193, 7, 0.3);
-}
-
-.dashpanel-status-critical {
-    background: rgba(220, 53, 69, 0.15);
-    color: #721c24;
-    border: 1px solid rgba(220, 53, 69, 0.3);
-}
-
-/* Sensor type icons in modal */
-.dashpanel-sensor-icon {
-    margin-right: 6px;
-    color: #6c757d;
-    width: 16px;
-    text-align: center;
-}
-
-.dashpanel-sensor-icon.temperature { color: #ff6b35; }
-.dashpanel-sensor-icon.pressure { color: #1e90ff; }
-.dashpanel-sensor-icon.level { color: #32cd32; }
-.dashpanel-sensor-icon.voltage { color: #ffd700; }
-.dashpanel-sensor-icon.speed { color: #ff1493; }
-.dashpanel-sensor-icon.weight { color: #8a2be2; }
-.dashpanel-sensor-icon.engine { color: #ff4500; }
-
-/* Grid row styling in modal */
-#dashpanel-sensor-window .x-grid-row {
+    line-height: 1.2;
     transition: background-color 0.2s ease;
 }
 
-#dashpanel-sensor-window .x-grid-row:hover {
-    background: rgba(0, 123, 255, 0.05);
+.dashpanel-v3-sensor-row:last-child {
+    border-bottom: none;
 }
 
-#dashpanel-sensor-window .x-grid-row.sensor-critical {
-    background: rgba(220, 53, 69, 0.03);
-    border-left: 3px solid #dc3545;
+.dashpanel-v3-sensor-row:hover {
+    background-color: #f8f9fa;
 }
 
-#dashpanel-sensor-window .x-grid-row.sensor-warning {
-    background: rgba(255, 193, 7, 0.03);
-    border-left: 3px solid #ffc107;
+/* Sensor icon */
+.dashpanel-v3-sensor-icon {
+    width: 16px;
+    margin-right: 6px;
+    font-size: 12px;
+    text-align: center;
 }
 
-/* Modal window toolbar */
-#dashpanel-sensor-window .x-toolbar {
-    background: #f8f9fa;
-    border-bottom: 1px solid #dee2e6;
+.dashpanel-v3-sensor-icon.normal {
+    color: #28a745;
 }
 
-#dashpanel-sensor-window .x-btn {
-    border-radius: 4px;
+.dashpanel-v3-sensor-icon.warning {
+    color: #ffc107;
+}
+
+.dashpanel-v3-sensor-icon.critical {
+    color: #dc3545;
+}
+
+/* Sensor name */
+.dashpanel-v3-sensor-name {
+    flex: 1;
     font-weight: 500;
+    color: #333;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-#dashpanel-sensor-window .x-btn-default {
-    background: #007bff;
-    border-color: #007bff;
-    color: white;
+/* Sensor value */
+.dashpanel-v3-sensor-value {
+    font-weight: bold;
+    margin-left: 5px;
 }
 
-#dashpanel-sensor-window .x-btn-default:hover {
-    background: #0056b3;
-    border-color: #0056b3;
+.dashpanel-v3-sensor-value.normal {
+    color: #28a745;
 }
 
-/* Loading and empty state styling */
-#dashpanel-sensor-window .x-grid-empty {
+.dashpanel-v3-sensor-value.warning {
+    color: #e67e22;
+}
+
+.dashpanel-v3-sensor-value.critical {
+    color: #dc3545;
+}
+
+/* Sensor unit */
+.dashpanel-v3-sensor-unit {
+    color: #666;
+    font-size: 10px;
+    margin-left: 2px;
+}
+
+/* Responsive multi-column layout */
+@media (max-width: 1200px) {
+    .dashpanel-v3-column {
+        min-width: 180px;
+    }
+}
+
+@media (max-width: 900px) {
+    .dashpanel-v3-column {
+        min-width: 160px;
+    }
+    
+    .dashpanel-v3-sensor-row {
+        font-size: 10px;
+    }
+    
+    .dashpanel-v3-sensor-icon {
+        font-size: 11px;
+        width: 14px;
+    }
+}
+
+@media (max-width: 600px) {
+    #dashpanel-v3-columns-container {
+        flex-direction: column !important;
+    }
+    
+    .dashpanel-v3-column {
+        min-width: 100%;
+        margin-right: 0 !important;
+        margin-bottom: 10px;
+    }
+}
+
+/* Animation for data updates */
+.dashpanel-v3-updating {
+    opacity: 0.7;
+    transition: opacity 0.3s ease;
+}
+
+.dashpanel-v3-updating .dashpanel-v3-sensor-row {
+    background-color: #e3f2fd;
+}
+
+/* No data message */
+.dashpanel-v3-no-data {
     text-align: center;
     padding: 40px;
-    color: #6c757d;
+    color: #666;
     background: #f8f9fa;
     border-radius: 8px;
     margin: 10px;
 }
 
-#dashpanel-sensor-window .x-grid-empty:before {
-    content: "📊";
-    display: block;
+.dashpanel-v3-no-data i {
     font-size: 48px;
-    margin-bottom: 10px;
-    opacity: 0.5;
+    color: #ffc107;
+    margin-bottom: 15px;
+    display: block;
 }
 
-/* Context menu item styling */
-.x-menu-item .fa-tachometer-alt {
-    color: #007bff;
-    margin-right: 8px;
-}
-
-/* Animations */
-@keyframes pulse-critical {
-    from { 
-        background: rgba(220, 53, 69, 0.1);
-        box-shadow: 0 0 5px rgba(220, 53, 69, 0.3);
-    }
-    to { 
-        background: rgba(220, 53, 69, 0.2);
-        box-shadow: 0 0 10px rgba(220, 53, 69, 0.5);
-    }
-}
-
-/* Responsive modal adjustments */
-@media (max-width: 1024px) {
-    #dashpanel-sensor-window {
-        width: 95% !important;
-        height: 80% !important;
-    }
-}
-
-@media (max-width: 768px) {
-    #dashpanel-sensor-window .x-column-header {
-        font-size: 12px;
-        padding: 8px 4px;
-    }
-    
-    #dashpanel-sensor-window .x-grid-cell {
-        padding: 6px 4px;
-        font-size: 12px;
-    }
-    
-    .dashpanel-status-indicator {
-        font-size: 10px;
-        padding: 2px 6px;
-    }
-}
-
-/* Dark mode support (if PILOT supports it) */
-@media (prefers-color-scheme: dark) {
-    #dashpanel-sensor-window {
-        background: #1e1e1e;
-        color: #ffffff;
-    }
-    
-    #dashpanel-sensor-window .x-window-header {
-        background: linear-gradient(to bottom, #3c3c3c 0%, #2c2c2c 100%);
-        color: #ffffff;
-    }
-    
-    #dashpanel-sensor-window .x-grid-header {
-        background: linear-gradient(to bottom, #3c3c3c 0%, #2c2c2c 100%);
-        color: #ffffff;
-    }
-    
-    #dashpanel-sensor-window .x-grid-row {
-        background: #1e1e1e;
-        color: #ffffff;
-    }
-    
-    #dashpanel-sensor-window .x-grid-row:hover {
-        background: rgba(255, 255, 255, 0.05);
-    }
-    
-    #dashpanel-sensor-window .x-toolbar {
-        background: #2c2c2c;
-        border-bottom: 1px solid #444;
-    }
-}
-
-/* Print styles for modal content */
-@media print {
-    #dashpanel-sensor-window .x-toolbar {
-        display: none;
-    }
-    
-    #dashpanel-sensor-window .x-window-header {
-        background: transparent !important;
-        color: #000 !important;
-    }
-    
-    .dashpanel-sensor-value-critical {
-        background: #ccc !important;
-        color: #000 !important;
-    }
-}
-
-/* Custom scrollbar for modal grid */
-#dashpanel-sensor-window .x-grid-view::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}
-
-#dashpanel-sensor-window .x-grid-view::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 4px;
-}
-
-#dashpanel-sensor-window .x-grid-view::-webkit-scrollbar-thumb {
-    background: #c1c1c1;
-    border-radius: 4px;
-}
-
-#dashpanel-sensor-window .x-grid-view::-webkit-scrollbar-thumb:hover {
-    background: #a1a1a1;
-}
-
-/* Modal window close button enhancement */
-#dashpanel-sensor-window .x-window-header .x-tool-close {
-    background-color: #dc3545;
-    border-radius: 50%;
-    color: white !important;
-}
-
-#dashpanel-sensor-window .x-window-header .x-tool-close:hover {
-    background-color: #c82333;
-    transform: scale(1.1);
-}
-
-/* Enhancement for refresh button */
-#dashpanel-sensor-window .x-toolbar .x-btn .fa-refresh {
-    animation: none;
-}
-
-#dashpanel-sensor-window .x-toolbar .x-btn:active .fa-refresh {
-    animation: rotate-refresh 0.5s ease-in-out;
-}
-
-@keyframes rotate-refresh {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+.dashpanel-v3-no-data h3 {
+    margin: 10px 0;
+    color: #333;
 }
