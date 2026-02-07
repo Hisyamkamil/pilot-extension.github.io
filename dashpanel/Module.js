@@ -119,35 +119,13 @@ Ext.define('Store.dashpanel.Module', {
                 cls: 'dashpanel-v3-compact-header'  // Custom CSS class for compact styling
             },
             
-            // Configure collapsed state styling
+            // Configure collapsed state styling for visibility
             listeners: {
                 collapse: function(panel) {
-                    // Make header compact when collapsed (like follow_text button)
-                    var header = panel.getHeader();
-                    if (header) {
-                        header.setStyle({
-                            'width': 'auto',
-                            'max-width': '300px',
-                            'display': 'inline-block',
-                            'position': 'relative',
-                            'float': 'left'
-                        });
-                        console.log('✅ Panel collapsed with compact header');
-                    }
+                    console.log('✅ Panel collapsed - remains visible as compact bar');
                 },
                 expand: function(panel) {
-                    // Restore full width when expanded
-                    var header = panel.getHeader();
-                    if (header) {
-                        header.setStyle({
-                            'width': '100%',
-                            'max-width': 'none',
-                            'display': 'block',
-                            'position': 'static',
-                            'float': 'none'
-                        });
-                        console.log('✅ Panel expanded with full header');
-                    }
+                    console.log('✅ Panel expanded - full multi-column display');
                 }
             },
             
