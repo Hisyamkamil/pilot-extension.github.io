@@ -1,24 +1,28 @@
 /* Dashpanel V3 - Multi-Column Sensor Display Styles */
 
-/* Main sensor columns container */
+/* Main sensor columns container - seamless layout */
 .dashpanel-v3-sensor-columns {
-    padding: 10px;
-    background: #f8f9fa;
+    padding: 0;
+    background: white;  /* Single background for all columns */
 }
 
-/* Individual column styling */
+/* Columns container styling */
+#dashpanel-v3-columns-container {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    padding: 10px;
+    gap: 0;  /* No gap between columns */
+    background: white;
+    border-radius: 4px;
+}
+
+/* Individual column styling - seamless */
 .dashpanel-v3-column {
     flex: 1;
     min-width: 200px;
-    background: white;
-    border-radius: 6px;
-    padding: 8px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    margin-right: 10px;
-}
-
-.dashpanel-v3-column:last-child {
-    margin-right: 0;
+    padding: 5px 10px;
+    /* No background, box-shadow, or border-radius - seamless columns */
 }
 
 /* Individual sensor row */
@@ -159,4 +163,41 @@
 .dashpanel-v3-no-data h3 {
     margin: 10px 0;
     color: #333;
+}
+
+/* Compact header styling (like follow_text button when collapsed) */
+.dashpanel-v3-compact-header {
+    outline-style: none;
+}
+
+/* Collapsed panel header - compact like follow_text button */
+#dashpanel-v3-sensor-panel.x-collapsed .x-panel-header {
+    width: auto !important;
+    max-width: 300px !important;
+    display: inline-block !important;
+    position: relative !important;
+    float: left !important;
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    margin: 5px;
+}
+
+/* Collapsed panel header title styling */
+#dashpanel-v3-sensor-panel.x-collapsed .x-panel-header .x-title {
+    width: auto !important;
+    max-width: 250px !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Collapsed panel - make entire panel compact */
+#dashpanel-v3-sensor-panel.x-collapsed {
+    width: auto !important;
+    max-width: 320px !important;
+    position: relative !important;
+    float: left !important;
+    margin: 5px !important;
 }
