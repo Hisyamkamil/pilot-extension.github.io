@@ -108,7 +108,7 @@ Ext.define('Store.dashpanel.Module', {
             animCollapse: 300,
             collapseDirection: 'bottom',
             titleCollapse: true,
-            collapseMode: 'mini',  // Mini collapse mode for compact header
+           // collapseMode: 'mini',  // Mini collapse mode for compact header
             layout: 'fit',
             hidden: true,
             id: 'dashpanel-v3-sensor-panel',
