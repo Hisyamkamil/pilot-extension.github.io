@@ -108,7 +108,7 @@ Ext.define('Store.dashpanel.Module', {
             animCollapse: 300,
             collapseDirection: 'bottom',
             titleCollapse: true,
-            collapseMode: 'header',  // Mini collapse mode for compact header
+            collapseMode: 'mini',  // Mini collapse mode for compact header
             layout: 'fit',
             hidden: true,
             id: 'dashpanel-v3-sensor-panel',
@@ -355,7 +355,7 @@ Ext.define('Store.dashpanel.Module', {
                'display: flex; ' +
                'align-items: center; ' +
                'padding: 3px 0; ' +
-               'border-bottom: 1px solid #eee; ' +
+               /* 'border-bottom: 1px solid #eee; ' */  // Row borders commented for cleaner look +
                'font-size: 11px; ' +
                'line-height: 1.2;' +
                '">' +
@@ -406,7 +406,7 @@ Ext.define('Store.dashpanel.Module', {
                                      'flex: 1; ' +
                                      'min-width: 200px; ' +
                                      'padding: 5px 10px; ' +
-                                     'border-right: ' + (col < 2 ? '1px solid #ddd' : 'none') + ';' +  // Separator between columns only
+                                     /* 'border-right: ' + (col < 2 ? '1px solid #ddd' : 'none') + ';' */  // Column separators commented for cleaner look
                                      '">';
                         
                         // Add sensor rows to this column
