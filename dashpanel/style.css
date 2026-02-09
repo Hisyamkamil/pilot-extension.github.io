@@ -143,6 +143,45 @@
     background-color: #e3f2fd;
 }
 
+/* Sensor group tabs styling */
+.dashpanel-v3-sensor-tabs .x-tab-bar {
+    background: #f8f9fa;
+    border-bottom: 1px solid #ddd;
+}
+
+.dashpanel-v3-sensor-tabs .x-tab {
+    border-radius: 4px 4px 0 0;
+    margin-right: 2px;
+}
+
+.dashpanel-v3-sensor-tabs .x-tab-active {
+    background: white;
+    border-bottom-color: white;
+}
+
+/* Tab content area */
+.dashpanel-v3-sensor-tabs .x-tab-panel-body {
+    background: white;
+    padding: 0;
+}
+
+/* Group tab icons */
+.dashpanel-v3-sensor-tabs .fa-microchip {
+    color: #007bff;
+}
+
+.dashpanel-v3-sensor-tabs .fa-car {
+    color: #28a745;
+}
+
+.dashpanel-v3-sensor-tabs .fa-question-circle {
+    color: #6c757d;
+}
+
+.dashpanel-v3-sensor-tabs .fa-cog {
+    color: #fd7e14;
+}
+
 /* No data message */
 .dashpanel-v3-no-data {
     text-align: center;
