@@ -22,7 +22,7 @@
     flex: 1;
     min-width: 200px;
     padding: 5px 10px;
-    /* No background, box-shadow, or border-radius - seamless columns */
+    /* No background, box-shadow, border-radius, or borders - completely seamless */
 }
 
 /* Individual sensor row */
@@ -30,15 +30,15 @@
     display: flex;
     align-items: center;
     padding: 3px 0;
-    border-bottom: 1px solid #eee;
+    /* border-bottom: 1px solid #eee; */  /* Row borders commented for cleaner look */
     font-size: 11px;
     line-height: 1.2;
     transition: background-color 0.2s ease;
 }
 
-.dashpanel-v3-sensor-row:last-child {
+/* .dashpanel-v3-sensor-row:last-child {
     border-bottom: none;
-}
+} */  /* Last child border rule commented out */
 
 .dashpanel-v3-sensor-row:hover {
     background-color: #f8f9fa;
