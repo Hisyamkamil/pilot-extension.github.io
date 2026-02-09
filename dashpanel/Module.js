@@ -129,14 +129,16 @@ Ext.define('Store.dashpanel.Module', {
                 }
             },
             
-            // Tabbed sensor groups layout
+            // Tabbed sensor groups layout with proper ExtJS configuration
             items: [{
                 xtype: 'tabpanel',
                 itemId: 'sensorGroupTabs',
                 plain: true,
+                deferredRender: false,  // Render all tabs immediately to avoid content issues
                 defaults: {
                     layout: 'fit',
-                    scrollable: true
+                    scrollable: true,
+                    autoDestroy: false  // Prevent tab destruction during updates
                 },
                 items: []  // Will be populated with sensor group tabs
             }],
@@ -398,61 +400,131 @@ Ext.define('Store.dashpanel.Module', {
         if (me.cardSensorPanel) {
             var tabPanel = me.cardSensorPanel.down('[itemId=sensorGroupTabs]');
             if (tabPanel) {
-                // Clear existing tabs
-                tabPanel.removeAll(true);
+                // Use ExtJS best practices: suspendLayouts during batch updates
+                tabPanel.suspendLayouts();
                 
-                // Create tab for each sensor group
-                Ext.Object.each(sensorGroups, function(groupName, sensorRows) {
-                    console.log('Creating tab for group:', groupName, 'with', sensorRows.length, 'sensors');
+                try {
+                    // Store current active tab
+                    var activeTab = tabPanel.getActiveTab();
+                    var activeTabTitle = activeTab ? activeTab.title : null;
                     
-                    // Calculate sensors per column for this group (aim for 3 columns)
-                    var sensorsPerColumn = Math.ceil(sensorRows.length / 3);
-                    var columnsHtml = '';
+                    console.log('🔍 Current active tab:', activeTabTitle);
                     
-                    // Create seamless 3 columns for this group
-                    for (var col = 0; col < 3; col++) {
-                        var startIdx = col * sensorsPerColumn;
-                        var endIdx = Math.min(startIdx + sensorsPerColumn, sensorRows.length);
+                    // Check if tabs need to be created or just updated
+                    var existingGroupNames = [];
+                    tabPanel.items.each(function(tab) {
+                        existingGroupNames.push(tab.title);
+                    });
+                    
+                    var newGroupNames = Object.keys(sensorGroups);
+                    var needsRebuild = !Ext.Array.equals(existingGroupNames.sort(), newGroupNames.sort());
+                    
+                    if (needsRebuild) {
+                        console.log('📝 Group structure changed, rebuilding tabs...');
                         
-                        if (startIdx < sensorRows.length) {
-                            columnsHtml += '<div style="' +
-                                         'flex: 1; ' +
-                                         'min-width: 200px; ' +
-                                         'padding: 5px 10px;' +
-                                         '">';
-                            
-                            // Add sensor rows to this column
-                            for (var i = startIdx; i < endIdx; i++) {
-                                columnsHtml += sensorRows[i];
-                            }
-                            
-                            columnsHtml += '</div>';
+                        // Remove all tabs but preserve active tab reference
+                        tabPanel.removeAll(false);  // false = don't destroy components
+                        
+                        // Create tabs for each group
+                        Ext.Object.each(sensorGroups, function(groupName, sensorRows) {
+                            me.createSensorGroupTab(tabPanel, groupName, sensorRows);
+                        });
+                        
+                        // Restore active tab or set first tab
+                        var targetTab = tabPanel.down('[title=' + Ext.String.escape(activeTabTitle) + ']');
+                        if (targetTab) {
+                            tabPanel.setActiveTab(targetTab);
+                            console.log('✅ Restored active tab:', activeTabTitle);
+                        } else if (tabPanel.items.length > 0) {
+                            tabPanel.setActiveTab(0);
+                            console.log('✅ Set first tab as active');
                         }
+                    } else {
+                        // Just update existing tab content
+                        console.log('🔄 Updating existing tabs content only');
+                        Ext.Object.each(sensorGroups, function(groupName, sensorRows) {
+                            var existingTab = tabPanel.down('[title=' + Ext.String.escape(groupName) + ']');
+                            if (existingTab) {
+                                me.updateTabContent(existingTab, sensorRows);
+                            }
+                        });
                     }
-                    
-                    // Create tab for this sensor group
-                    var groupTab = {
-                        title: groupName,
-                        iconCls: groupName === 'Auto Can' ? 'fa fa-microchip' :
-                                groupName === 'Vehicle' ? 'fa fa-car' :
-                                groupName === 'No Group' ? 'fa fa-question-circle' : 'fa fa-cog',
-                        html: '<div class="dashpanel-v3-sensor-columns">' +
-                              '<div style="display: flex; flex-wrap: wrap; align-items: flex-start; padding: 10px;">' +
-                              columnsHtml +
-                              '</div></div>'
-                    };
-                    
-                    tabPanel.add(groupTab);
-                });
-                
-                // Activate first tab
-                if (tabPanel.items.length > 0) {
-                    tabPanel.setActiveTab(0);
+                } finally {
+                    // Always resume layouts
+                    tabPanel.resumeLayouts(true);
                 }
                 
-                console.log('✅ Created', tabPanel.items.length, 'sensor group tabs');
+                console.log('✅ Updated sensor group tabs with proper ExtJS lifecycle');
             }
         }
+    },
+    
+    createSensorGroupTab: function(tabPanel, groupName, sensorRows) {
+        var me = this;
+        
+        // Calculate sensors per column for this group (aim for 3 columns)
+        var sensorsPerColumn = Math.ceil(sensorRows.length / 3);
+        var columnsHtml = '';
+        
+        // Create seamless 3 columns for this group
+        for (var col = 0; col < 3; col++) {
+            var startIdx = col * sensorsPerColumn;
+            var endIdx = Math.min(startIdx + sensorsPerColumn, sensorRows.length);
+            
+            if (startIdx < sensorRows.length) {
+                columnsHtml += '<div style="flex: 1; min-width: 200px; padding: 5px 10px;">';
+                
+                for (var i = startIdx; i < endIdx; i++) {
+                    columnsHtml += sensorRows[i];
+                }
+                
+                columnsHtml += '</div>';
+            }
+        }
+        
+        // Create tab component
+        var groupTab = Ext.create('Ext.panel.Panel', {
+            title: groupName,
+            itemId: 'sensor-group-' + groupName.replace(/[^a-zA-Z0-9]/g, '-'),
+            iconCls: groupName === 'Auto Can' ? 'fa fa-microchip' :
+                    groupName === 'Vehicle' ? 'fa fa-car' :
+                    groupName === 'No Group' ? 'fa fa-question-circle' : 'fa fa-cog',
+            html: '<div class="dashpanel-v3-sensor-columns">' +
+                  '<div style="display: flex; flex-wrap: wrap; align-items: flex-start; padding: 10px;">' +
+                  columnsHtml +
+                  '</div></div>',
+            autoDestroy: false  // Prevent destruction during updates
+        });
+        
+        tabPanel.add(groupTab);
+        console.log('✅ Created ExtJS tab for group:', groupName);
+    },
+    
+    updateTabContent: function(tab, sensorRows) {
+        var me = this;
+        
+        var sensorsPerColumn = Math.ceil(sensorRows.length / 3);
+        var columnsHtml = '';
+        
+        for (var col = 0; col < 3; col++) {
+            var startIdx = col * sensorsPerColumn;
+            var endIdx = Math.min(startIdx + sensorsPerColumn, sensorRows.length);
+            
+            if (startIdx < sensorRows.length) {
+                columnsHtml += '<div style="flex: 1; min-width: 200px; padding: 5px 10px;">';
+                for (var i = startIdx; i < endIdx; i++) {
+                    columnsHtml += sensorRows[i];
+                }
+                columnsHtml += '</div>';
+            }
+        }
+        
+        tab.update('<div class="dashpanel-v3-sensor-columns">' +
+                  '<div style="display: flex; flex-wrap: wrap; align-items: flex-start; padding: 10px;">' +
+                  columnsHtml +
+                  '</div></div>');
+        
+        console.log('✅ Updated content for tab:', tab.title);
     },
     
     showNoSensorTabs: function() {
