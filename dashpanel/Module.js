@@ -208,7 +208,7 @@ Ext.define('Store.dashpanel.Module', {
         var cssLink = document.createElement("link");
         cssLink.setAttribute("rel", "stylesheet");
         cssLink.setAttribute("type", "text/css");
-        cssLink.setAttribute("href", '/store/dashpanel/style.css');
+        cssLink.setAttribute("href", '../store/dashpanel/style.css');
         document.head.appendChild(cssLink);
         console.log('✅ Custom styles loaded');
     },
@@ -240,7 +240,7 @@ Ext.define('Store.dashpanel.Module', {
         var me = this;
         
         Ext.Ajax.request({
-            url: '/store/dashpanel/config.json',
+            url: '../store/dashpanel/config.json',
             method: 'GET',
             timeout: 30000,
             success: function(response) {
