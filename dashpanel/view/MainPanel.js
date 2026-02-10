@@ -1,519 +1,690 @@
 Ext.define('Store.dashpanel.view.MainPanel', {
     extend: 'Ext.panel.Panel',
-    alias: 'widget.dashpanelmain',
+    alias: 'widget.dashpanel.mainpanel',
     
-    layout: 'border',
-    title: 'Real-Time Dashboard Panel',
-    
+    // Configuration properties
+    config: null,
+    refreshTask: null,
+    currentVehicleId: null,
+    currentVehicleName: null,
+    currentVehicleRecord: null,
+
+    /**
+     * Initialize main sensor panel component
+     */
     initComponent: function() {
         var me = this;
         
-        // Current vehicle info panel
-        me.vehicleInfoPanel = Ext.create('Ext.panel.Panel', {
-            region: 'north',
-            height: 60,
-            title: 'Selected Vehicle',
-            html: '<div style="padding: 10px; text-align: center; color: #666;">Select a vehicle from the dashboard panel to view data</div>',
-            bodyStyle: 'background: #f5f5f5;'
-        });
+        // Get configuration from parent module
+        me.config = me.moduleConfig || me.getDefaultConfig();
         
-        // Sensor data grid
-        me.sensorGrid = Ext.create('Ext.grid.Panel', {
-            region: 'center',
-            title: 'Live Sensor Data',
-            store: Ext.create('Ext.data.Store', {
-                fields: [
-                    'sensor_name',
-                    'sensor_type',
-                    'current_value',
-                    'unit',
-                    'status',
-                    'last_update',
-                    'min_threshold',
-                    'max_threshold'
-                ],
-                data: []
-            }),
-            columns: [{
-                text: 'Sensor Name',
-                dataIndex: 'sensor_name',
-                flex: 2,
-                renderer: function(value, meta, record) {
-                    var iconClass = me.getSensorIcon(record.get('sensor_type'));
-                    return '<i class="' + iconClass + '"></i> ' + value;
-                }
-            }, {
-                text: 'Type',
-                dataIndex: 'sensor_type',
-                width: 100
-            }, {
-                text: 'Current Value',
-                dataIndex: 'current_value',
-                width: 120,
-                renderer: function(value, meta, record) {
-                    var unit = record.get('unit') || '';
-                    var status = record.get('status');
-                    
-                    // Color coding based on status
-                    var color = '#000';
-                    if (status === 'warning') color = '#ff8c00';
-                    else if (status === 'critical') color = '#ff0000';
-                    else if (status === 'normal') color = '#008000';
-                    
-                    // Format value based on sensor type
-                    var formattedValue = value;
-                    if (typeof value === 'number') {
-                        formattedValue = Ext.util.Format.number(value, '0.##');
-                    }
-                    
-                    return '<span style="color: ' + color + '; font-weight: bold;">' + formattedValue + ' ' + unit + '</span>';
-                }
-            }, {
-                text: 'Status',
-                dataIndex: 'status',
-                width: 80,
-                renderer: function(value) {
-                    var icon = '';
-                    var color = '';
-                    
-                    switch(value) {
-                        case 'normal':
-                            icon = 'fa fa-check-circle';
-                            color = 'green';
-                            break;
-                        case 'warning':
-                            icon = 'fa fa-exclamation-triangle';
-                            color = 'orange';
-                            break;
-                        case 'critical':
-                            icon = 'fa fa-times-circle';
-                            color = 'red';
-                            break;
-                        default:
-                            icon = 'fa fa-question-circle';
-                            color = 'gray';
-                    }
-                    
-                    return '<i class="' + icon + '" style="color: ' + color + ';"></i> ' + 
-                           (value ? value.charAt(0).toUpperCase() + value.slice(1) : 'Unknown');
-                }
-            }, {
-                text: 'Thresholds',
-                dataIndex: 'min_threshold',
-                width: 120,
-                renderer: function(value, meta, record) {
-                    var min = record.get('min_threshold');
-                    var max = record.get('max_threshold');
-                    if (min !== null && max !== null) {
-                        return min + ' - ' + max;
-                    } else if (min !== null) {
-                        return 'Min: ' + min;
-                    } else if (max !== null) {
-                        return 'Max: ' + max;
-                    }
-                    return '-';
-                }
-            }, {
-                text: 'Last Update',
-                dataIndex: 'last_update',
-                width: 140,
-                renderer: function(value) {
-                    if (value) {
-                        return Ext.Date.format(new Date(value), 'Y-m-d H:i:s');
-                    }
-                    return '-';
-                }
-            }],
-            viewConfig: {
-                emptyText: 'No sensor data available. Select a vehicle to view sensors.',
-                deferEmptyText: false
-            }
-        });
+        // Configure panel properties
+        me.title = 'Sensor Monitor - Sensor Data';
+        me.height = me.config.ui.panelHeight;
+        me.dock = 'bottom';
+        me.split = true;
+        me.resizable = me.config.ui.resizable;
+        me.collapsible = me.config.ui.collapsible;
+        me.collapsed = false;
+        me.collapseFirst = true;
+        me.animCollapse = me.config.ui.animCollapse;
+        me.collapseDirection = 'bottom';
+        me.titleCollapse = true;
+        me.collapseMode = 'mini';
+        me.layout = 'fit';
+        me.hidden = true;
+        me.id = 'dashpanel-main-panel';
         
-        me.items = [me.vehicleInfoPanel, me.sensorGrid];
+        // Configure header
+        me.header = {
+            titlePosition: 1,
+            cls: 'dashpanel-compact-header'
+        };
+        
+        // Configure panel items
+        me.items = [{
+            xtype: 'tabpanel',
+            itemId: 'sensorGroupTabs',
+            plain: true,
+            deferredRender: false,
+            cls: 'dashpanel-sensor-tabs',
+            defaults: {
+                layout: 'fit',
+                scrollable: true,
+                autoDestroy: false
+            },
+            items: []
+        }];
         
         me.callParent(arguments);
-        
-        // Initialize refresh task for real-time updates
-        me.refreshTask = null;
-        me.currentVehicleId = null;
+        console.log('✅ MainPanel component initialized');
     },
-    
-    // Method called from navigation panel when vehicle is selected
-    loadVehicleSensors: function(vehicleId, vehicleName) {
+
+    /**
+     * Get default configuration if not provided
+     * @returns {Object} Default configuration
+     */
+    getDefaultConfig: function() {
+        return {
+            ui: { panelHeight: 325, resizable: true, collapsible: true, animCollapse: 300, tabIcon: 'fa fa-list-alt' },
+            sensors: { dtcDetectionKeyword: 'group by active dtc', defaultColumns: 3 },
+            colors: { normal: '#008000', warning: '#ff8c00', critical: '#ff0000' },
+            icons: { default: 'fa fa-microchip' },
+            api: { primaryUrl: '/backend/ax/current_data.php', fallbackUrl: 'https://dev-telematics.mst.co.id/backend/ax/current_data.php', timeout: 30000 },
+            refresh: { interval: 500, minInterval: 100, maxInterval: 10000 }
+        };
+    },
+
+    /**
+     * Show vehicle sensors (called from Module when vehicle selected)
+     * @param {string} vehicleId - Vehicle ID
+     * @param {string} vehicleName - Vehicle name
+     * @param {Object} vehicleRecord - Vehicle record
+     */
+    showVehicleSensors: function(vehicleId, vehicleName, vehicleRecord) {
         var me = this;
+        
+        console.log('🚗 MainPanel: Vehicle selected:', vehicleName, 'ID:', vehicleId);
         
         me.currentVehicleId = vehicleId;
+        me.currentVehicleName = vehicleName;
+        me.currentVehicleRecord = vehicleRecord;
         
-        // Update vehicle info panel
-        me.vehicleInfoPanel.update(
-            '<div style="padding: 10px;">' +
-            '<h3 style="margin: 0; color: #333;"><i class="fa fa-car"></i> ' + vehicleName + '</h3>' +
-            '<span style="color: #666;">Vehicle ID: ' + vehicleId + ' | Real-time dashboard monitoring active</span>' +
-            '</div>'
-        );
+        me.setTitle('Sensor Monitor - ' + vehicleName);
+        me.loadVehicleSensorData(vehicleId);
+        me.startRefreshTimer(vehicleId);
         
-        // Start real-time sensor data loading
-        me.startSensorDataRefresh();
+        console.log('✅ MainPanel: Vehicle sensor loading initiated');
     },
-    
-    startSensorDataRefresh: function() {
+
+    /**
+     * Load vehicle sensor data from API
+     * @param {string} vehicleId - Vehicle ID
+     */
+    loadVehicleSensorData: function(vehicleId) {
         var me = this;
         
-        // Stop existing refresh task
-        if (me.refreshTask) {
-            clearInterval(me.refreshTask);
-        }
+        if (!me.currentVehicleId) return;
         
-        // Load initial data
-        me.loadSensorData();
-        
-        // Set up periodic refresh (every 5 seconds)
-        me.refreshTask = setInterval(function() {
-            if (me.currentVehicleId) {
-                me.loadSensorData();
-            }
-        }, 5000);
-    },
-    
-    loadSensorData: function() {
-        var me = this;
-        
-        if (!me.currentVehicleId) {
-            console.warn('No vehicle ID set, skipping sensor data load');
-            return;
-        }
-        
-        console.log('🔄 Loading sensor data for vehicle ID:', me.currentVehicleId);
-        
-        // Try v3 API first
-        me.tryV3API();
-    },
-    
-    tryV3API: function() {
-        var me = this;
-        
-        console.log('Trying PILOT v3 API...');
-        
-        // Try PILOT v3 API first
-        Ext.Ajax.request({
-            url: '/api/v3/vehicles/status',
-            headers: {
-                'Authorization': 'Bearer 010b2ec453be98c07694d807b30861d1'
-            },
-            params: {
-                agent_id: me.currentVehicleId
-            },
-            success: function(response) {
-                console.log('✅ v3 API Success:', response.responseText);
-                try {
-                    var data = Ext.decode(response.responseText);
-                    if (data.code === 0 && data.data && data.data.length > 0) {
-                        console.log('Processing real sensor data from v3 API');
-                        me.processRealSensorData(data.data[0]);
-                    } else {
-                        console.warn('v3 API returned no data, trying backend API');
-                        me.tryBackendAPI();
-                    }
-                } catch (e) {
-                    console.error('v3 API parse error:', e);
-                    me.tryBackendAPI();
-                }
-            },
-            failure: function(response) {
-                console.warn('❌ v3 API failed (Status:', response.status, '), trying backend API...');
-                me.tryBackendAPI();
-            }
-        });
-    },
-    
-    tryBackendAPI: function() {
-        var me = this;
-        
-        console.log('Trying backend current_data API...');
-        
-        // Fallback to backend current data API (no token required)
-        // Try relative URL first (for internal PILOT calls), then external if needed
-        var backendUrl = '/backend/ax/current_data.php';
-        
-        console.log('Trying backend API:', backendUrl);
+        console.log('🔄 MainPanel: Loading sensor data for vehicle:', me.currentVehicleId);
         
         Ext.Ajax.request({
-            url: backendUrl,
+            url: me.config.api.url,
+            timeout: me.config.api.timeout,
             success: function(response) {
-                console.log('✅ Backend API Success:', response.responseText);
-                try {
-                    var data = Ext.decode(response.responseText);
-                    me.processBackendSensorData(data);
-                } catch (e) {
-                    console.error('❌ Backend API parse error:', e, 'Response:', response.responseText);
-                    // Try external URL if relative fails
-                    me.tryExternalBackendAPI();
-                }
+                me.handleAPIResponse(response);
             },
             failure: function(response) {
-                console.warn('❌ Internal backend API failed. Status:', response.status, 'Trying external URL...');
-                // Try external URL if relative fails
-                me.tryExternalBackendAPI();
-            }
-        });
-    },
-    
-    tryExternalBackendAPI: function() {
-        var me = this;
-        
-        console.log('Trying external backend API...');
-        
-        Ext.Ajax.request({
-            url: 'https://dev-telematics.mst.co.id/backend/ax/current_data.php',
-            success: function(response) {
-                console.log('✅ External Backend API Success:', response.responseText);
-                try {
-                    var data = Ext.decode(response.responseText);
-                    me.processBackendSensorData(data);
-                } catch (e) {
-                    console.error('❌ External Backend API parse error:', e, 'Response:', response.responseText);
-                    me.showNoDataMessage();
-                }
-            },
-            failure: function(response) {
-                console.error('❌ External Backend API failed. Status:', response.status, 'Response:', response.responseText);
-                console.error('This might be a CORS issue or authentication required from external domains');
+                console.error('❌ MainPanel: API failed:', response.status);
                 me.showNoDataMessage();
             }
         });
     },
-    
-    showNoDataMessage: function() {
+
+    /**
+     * Handle API response
+     * @param {Object} response - AJAX response
+     */
+    handleAPIResponse: function(response) {
         var me = this;
         
-        console.error('💥 All APIs failed - no sensor data available');
-        
-        // Show empty grid with error message
-        me.sensorGrid.getStore().loadData([{
-            sensor_name: 'All APIs Failed',
-            sensor_type: 'error',
-            current_value: 'Check console for detailed error messages',
-            unit: '',
-            status: 'critical',
-            last_update: new Date(),
-            min_threshold: null,
-            max_threshold: null
-        }]);
-    },
-    
-    processBackendSensorData: function(data) {
-        var me = this;
-        var sensorDataArray = [];
-        
-        console.log('🔄 Processing backend API sensor data...');
-        console.log('📊 Full API Response:', data);
-        console.log('🔍 Response type:', typeof data);
-        console.log('🔍 Response.c:', data ? data.c : 'undefined');
-        console.log('🔍 Response.objects:', data && data.objects ? 'exists (' + data.objects.length + ' items)' : 'missing');
-        
-        // Backend API returns: {c: 0, objects: [...]}
-        if (data && data.c === 0 && Ext.isArray(data.objects)) {
-            console.log('🔍 API Response structure valid. Objects count:', data.objects.length);
-            console.log('🔍 Looking for vehicle ID:', me.currentVehicleId, '(type:', typeof me.currentVehicleId, ')');
-            
-            // Find the vehicle by current vehicle ID
-            var vehicle = null;
-            Ext.each(data.objects, function(obj, index) {
-                console.log('🔍 Checking vehicle', index + ':', 'id=' + obj.id, 'veh_id=' + obj.veh_id, 'name=' + obj.name);
-                if (obj.id == me.currentVehicleId || obj.veh_id == me.currentVehicleId) {
-                    console.log('✅ FOUND MATCHING VEHICLE:', obj.name);
-                    vehicle = obj;
-                    return false; // break loop
-                }
-            });
-            
-            if (!vehicle) {
-                console.error('❌ Vehicle ID', me.currentVehicleId, 'NOT FOUND in API response');
-                console.error('Available vehicle IDs:', data.objects.map(function(obj) { return obj.id + ' (' + obj.name + ')'; }));
-                me.showNoDataMessage();
-                return;
-            }
-            
-            console.log('✅ Found vehicle data for', vehicle.name + ':', vehicle);
-            console.log('✅ Sensors available:', Object.keys(vehicle.sensors || {}).length);
-            
-            // Add basic vehicle data
-            if (vehicle.last_event && vehicle.last_event.speed !== undefined) {
-                sensorDataArray.push({
-                    sensor_name: 'Vehicle Speed',
-                    sensor_type: 'speed',
-                    current_value: vehicle.last_event.speed,
-                    unit: 'km/h',
-                    status: vehicle.last_event.speed > 80 ? 'warning' : 'normal',
-                    last_update: new Date(vehicle.unixtimestamp * 1000),
-                    min_threshold: null,
-                    max_threshold: 80
-                });
-            }
-            
-            // Add engine status (firing)
-            if (vehicle.firing !== undefined) {
-                sensorDataArray.push({
-                    sensor_name: 'Engine Status',
-                    sensor_type: 'engine',
-                    current_value: vehicle.firing ? 'ON' : 'OFF',
-                    unit: '',
-                    status: 'normal',
-                    last_update: new Date(vehicle.unixtimestamp * 1000),
-                    min_threshold: null,
-                    max_threshold: null
-                });
-            }
-            
-            // Add GPS position
-            if (vehicle.lat && vehicle.lon) {
-                sensorDataArray.push({
-                    sensor_name: 'GPS Position',
-                    sensor_type: 'location',
-                    current_value: parseFloat(vehicle.lat).toFixed(6) + ', ' + parseFloat(vehicle.lon).toFixed(6),
-                    unit: 'lat,lon',
-                    status: 'normal',
-                    last_update: new Date(vehicle.unixtimestamp * 1000),
-                    min_threshold: null,
-                    max_threshold: null
-                });
-            }
-            
-            // Process sensors object - format: "sensorName": "4 %|timestamp|id|value|source|raw|flag|type"
-            if (vehicle.sensors && typeof vehicle.sensors === 'object') {
-                Ext.Object.each(vehicle.sensors, function(sensorName, sensorValue) {
-                    // Parse pipe-separated sensor string: "4 %|1769491575|1539853|4|Auto Can|4|1|3"
-                    var parts = sensorValue.split('|');
-                    if (parts.length >= 4) {
-                        var humanValue = parts[0]; // "4 %"
-                        var timestamp = parseInt(parts[1]); // 1769491575
-                        var digitalValue = parseFloat(parts[3]); // 4
-                        
-                        var sensorType = me.determineSensorType(sensorName);
-                        var status = me.calculateSensorStatusFromValue(digitalValue, sensorType);
-                        var unit = me.extractUnit(humanValue);
-                        
-                        sensorDataArray.push({
-                            sensor_name: sensorName,
-                            sensor_type: sensorType,
-                            current_value: digitalValue,
-                            unit: unit,
-                            status: status,
-                            last_update: new Date(timestamp * 1000),
-                            min_threshold: null,
-                            max_threshold: null,
-                            raw_value: parts[5] || '',
-                            human_value: humanValue
-                        });
-                    }
-                });
-            }
+        try {
+            var data = Ext.decode(response.responseText);
+            me.processSensorData(data);
+        } catch (e) {
+            console.error('❌ MainPanel: API parse error:', e);
+            me.showNoDataMessage();
         }
+    },
+
+    /**
+     * Process sensor data from API
+     * @param {Object} data - API response data
+     */
+    processSensorData: function(data) {
+        var me = this;
+        var sensorGroups = {};
         
-        if (sensorDataArray.length === 0) {
-            console.warn('No sensor data found for vehicle ID:', me.currentVehicleId);
+        console.log('MainPanel: Processing sensor data...');
+        
+        if (!me.isValidAPIResponse(data)) {
             me.showNoDataMessage();
             return;
         }
-        
-        console.log('✅ Successfully loaded real sensor data from backend. Count:', sensorDataArray.length);
-        me.sensorGrid.getStore().loadData(sensorDataArray);
-    },
-    
-    // Helper to format sensor names from API keys
-    formatSensorName: function(key) {
-        return key.replace(/_/g, ' ').replace(/\b\w/g, function(l) { return l.toUpperCase(); });
-    },
-    
-    // Helper to get appropriate units for sensor types
-    getSensorUnit: function(key, sensorType) {
-        var keyLower = key.toLowerCase();
-        
-        if (keyLower.includes('temp')) return '°C';
-        if (keyLower.includes('voltage') || keyLower.includes('volt')) return 'V';
-        if (keyLower.includes('pressure')) return 'PSI';
-        if (keyLower.includes('fuel') || keyLower.includes('level')) return '%';
-        if (keyLower.includes('speed')) return 'km/h';
-        if (keyLower.includes('weight') || keyLower.includes('load')) return 'kg';
-        
-        switch (sensorType) {
-            case 'temperature': return '°C';
-            case 'voltage': return 'V';
-            case 'pressure': return 'PSI';
-            case 'level': return '%';
-            case 'speed': return 'km/h';
-            case 'weight': return 'kg';
-            default: return '';
+
+        var vehicle = me.findVehicleInData(data);
+        if (!vehicle) {
+            console.error('❌ MainPanel: Vehicle not found:', me.currentVehicleId);
+            me.showNoDataMessage();
+            return;
         }
+
+        me.addBasicVehicleSensors(sensorGroups, vehicle);
+        me.processSensorsByGroup(sensorGroups, vehicle);
+        
+        if (Object.keys(sensorGroups).length === 0) {
+            me.showNoDataMessage();
+            return;
+        }
+
+        console.log('✅ MainPanel: Created', Object.keys(sensorGroups).length, 'sensor groups');
+        me.updateSensorTabs(sensorGroups);
     },
-    
-    processRealSensorData: function(vehicleData) {
+
+    /**
+     * Validate API response
+     * @param {Object} data - API response data
+     * @returns {boolean} True if valid
+     */
+    isValidAPIResponse: function(data) {
+        return data && data.c === 0 && Ext.isArray(data.objects);
+    },
+
+    /**
+     * Find vehicle in API data
+     * @param {Object} data - API response data
+     * @returns {Object|null} Vehicle object or null
+     */
+    findVehicleInData: function(data) {
         var me = this;
-        var sensorDataArray = [];
+        var vehicle = null;
         
-        // Process real sensor data from PILOT v3 API response
-        if (vehicleData && Ext.isArray(vehicleData.sensors)) {
-            Ext.each(vehicleData.sensors, function(sensor) {
-                // Determine sensor type from name or use generic
-                var sensorType = me.determineSensorType(sensor.name);
-                
-                // Calculate status based on sensor value patterns (since API doesn't provide thresholds)
-                var status = me.calculateSensorStatusFromValue(sensor.dig_value, sensorType);
-                
-                sensorDataArray.push({
-                    sensor_name: sensor.name || 'Unknown Sensor',
-                    sensor_type: sensorType,
-                    current_value: sensor.dig_value,
-                    unit: me.extractUnit(sensor.hum_value),
-                    status: status,
-                    last_update: new Date(sensor.change_ts * 1000), // Convert from unix timestamp
-                    min_threshold: null, // API doesn't provide thresholds
-                    max_threshold: null,
-                    raw_value: sensor.raw_value,
-                    sensor_id: sensor.id
-                });
-            });
+        Ext.each(data.objects, function(obj) {
+            if (obj.id == me.currentVehicleId || obj.veh_id == me.currentVehicleId) {
+                vehicle = obj;
+                return false;
+            }
+        });
+        
+        return vehicle;
+    },
+
+    /**
+     * Add basic vehicle sensors to groups
+     * @param {Object} sensorGroups - Sensor groups object
+     * @param {Object} vehicle - Vehicle data
+     */
+    addBasicVehicleSensors: function(sensorGroups, vehicle) {
+        var me = this;
+        
+        if (!sensorGroups['Vehicle']) {
+            sensorGroups['Vehicle'] = [];
         }
+
+        if (vehicle.last_event && vehicle.last_event.speed !== undefined) {
+            sensorGroups['Vehicle'].push(me.createSensorRow({
+                name: 'Vehicle Speed',
+                type: 'speed',
+                value: vehicle.last_event.speed,
+                unit: 'km/h',
+                status: vehicle.last_event.speed > 80 ? 'warning' : 'normal'
+            }));
+        }
+
+        if (vehicle.firing !== undefined) {
+            sensorGroups['Vehicle'].push(me.createSensorRow({
+                name: 'Engine Status',
+                type: 'engine',
+                value: vehicle.firing ? 'ON' : 'OFF',
+                unit: '',
+                status: 'normal'
+            }));
+        }
+    },
+
+    /**
+     * Process sensors by group
+     * @param {Object} sensorGroups - Sensor groups object
+     * @param {Object} vehicle - Vehicle data
+     */
+    processSensorsByGroup: function(sensorGroups, vehicle) {
+        var me = this;
         
-        // Also add vehicle status as sensors
-        if (vehicleData) {
-            // Add speed as a sensor
-            if (vehicleData.speed !== undefined) {
-                sensorDataArray.push({
-                    sensor_name: 'Vehicle Speed',
-                    sensor_type: 'speed',
-                    current_value: vehicleData.speed,
-                    unit: 'km/h',
-                    status: vehicleData.speed > 80 ? 'warning' : 'normal',
-                    last_update: new Date(vehicleData.unixtimestamp * 1000),
-                    min_threshold: null,
-                    max_threshold: 80
-                });
+        if (!vehicle.sensors || typeof vehicle.sensors !== 'object') {
+            return;
+        }
+
+        console.log('MainPanel: Processing', Object.keys(vehicle.sensors).length, 'sensors...');
+        
+        Ext.Object.each(vehicle.sensors, function(sensorName, sensorValue) {
+            if (me.isDTCSensor(sensorName)) {
+                me.processDTCSensor(sensorGroups, sensorValue);
+            } else {
+                me.processRegularSensor(sensorGroups, sensorName, sensorValue);
+            }
+        });
+    },
+
+    /**
+     * Check if sensor is DTC sensor
+     * @param {string} sensorName - Sensor name
+     * @returns {boolean} True if DTC sensor
+     */
+    isDTCSensor: function(sensorName) {
+        var me = this;
+        var keyword = me.config.sensors.dtcDetectionKeyword.toLowerCase();
+        return sensorName && sensorName.toLowerCase().includes(keyword);
+    },
+
+    /**
+     * Process DTC sensor
+     * @param {Object} sensorGroups - Sensor groups object
+     * @param {string} sensorValue - DTC sensor value
+     */
+    processDTCSensor: function(sensorGroups, sensorValue) {
+        var me = this;
+        
+        console.log('🔧 MainPanel: Processing DTC sensor data');
+        
+        if (!sensorGroups['Active DTC']) {
+            sensorGroups['Active DTC'] = [];
+        }
+
+        try {
+            var dtcList = Store.dashpanel.view.DTCHandler.parseDTCData(sensorValue);
+            var dtcTableHtml = Store.dashpanel.view.DTCHandler.createDTCTable(dtcList);
+            
+            sensorGroups['Active DTC'].push('<div class="dashpanel-dtc-container">' + dtcTableHtml + '</div>');
+            
+            var count = dtcList ? dtcList.length : 0;
+            console.log('✅ MainPanel: Added', count, 'DTCs to display');
+            
+        } catch (e) {
+            console.error('❌ MainPanel: Error processing DTC data:', e);
+            sensorGroups['Active DTC'].push('<div class="dashpanel-error">Error parsing DTC data</div>');
+        }
+    },
+
+    /**
+     * Process regular sensor
+     * @param {Object} sensorGroups - Sensor groups object
+     * @param {string} sensorName - Sensor name
+     * @param {string} sensorValue - Sensor value
+     */
+    processRegularSensor: function(sensorGroups, sensorName, sensorValue) {
+        var me = this;
+        var parts = sensorValue.split('|');
+        
+        if (parts.length >= 5) {
+            var humanValue = parts[0];
+            var digitalValue = parseFloat(parts[3]);
+            var groupName = parts[4] || 'No Group';
+            var sensorType = me.determineSensorType(sensorName);
+            var status = me.calculateSensorStatus(digitalValue, sensorType);
+            
+            if (!sensorGroups[groupName]) {
+                sensorGroups[groupName] = [];
             }
             
-            // Add engine status
-            if (vehicleData.firing !== undefined) {
-                sensorDataArray.push({
-                    sensor_name: 'Engine Status',
-                    sensor_type: 'engine',
-                    current_value: vehicleData.firing,
-                    unit: vehicleData.firing ? 'ON' : 'OFF',
-                    status: 'normal',
-                    last_update: new Date(vehicleData.unixtimestamp * 1000),
-                    min_threshold: null,
-                    max_threshold: null
-                });
+            sensorGroups[groupName].push(me.createSensorRow({
+                name: sensorName,
+                type: sensorType,
+                value: digitalValue,
+                unit: me.extractUnit(humanValue),
+                status: status
+            }));
+        }
+    },
+
+    /**
+     * Create sensor row HTML
+     * @param {Object} sensor - Sensor object
+     * @returns {string} HTML row
+     */
+    createSensorRow: function(sensor) {
+        var me = this;
+        var statusColor = me.getStatusColor(sensor.status);
+        var sensorIcon = me.getSensorIcon(sensor.type);
+        var formattedValue = me.formatSensorValue(sensor.value);
+        
+        return '<div class="dashpanel-sensor-row ' + sensor.status + '">' +
+               '<i class="' + sensorIcon + ' dashpanel-sensor-icon ' + sensor.status + '"></i>' +
+               '<span class="dashpanel-sensor-name">' + sensor.name + '</span>' +
+               '<span class="dashpanel-sensor-value ' + sensor.status + '">' + formattedValue + '</span>' +
+               '<span class="dashpanel-sensor-unit">' + (sensor.unit || '') + '</span>' +
+               '</div>';
+    },
+
+    /**
+     * Get status color from configuration
+     * @param {string} status - Status string
+     * @returns {string} Color hex code
+     */
+    getStatusColor: function(status) {
+        var me = this;
+        return me.config.colors[status] || me.config.colors.normal;
+    },
+
+    /**
+     * Get sensor icon from configuration
+     * @param {string} sensorType - Sensor type
+     * @returns {string} CSS icon class
+     */
+    getSensorIcon: function(sensorType) {
+        var me = this;
+        return me.config.icons[sensorType] || me.config.icons.default;
+    },
+
+    /**
+     * Format sensor value
+     * @param {*} value - Sensor value
+     * @returns {string} Formatted value
+     */
+    formatSensorValue: function(value) {
+        return typeof value === 'number' ? Ext.util.Format.number(value, '0.##') : value;
+    },
+
+    /**
+     * Update sensor tabs
+     * @param {Object} sensorGroups - Sensor groups object
+     */
+    updateSensorTabs: function(sensorGroups) {
+        var me = this;
+        var tabPanel = me.down('[itemId=sensorGroupTabs]');
+        
+        if (!tabPanel) return;
+        
+        var activeIndex = me.getActiveTabIndex(tabPanel);
+        
+        tabPanel.suspendLayouts();
+        
+        if (me.needsTabRebuild(tabPanel, sensorGroups)) {
+            me.rebuildTabs(tabPanel, sensorGroups);
+            me.restoreActiveTab(tabPanel, activeIndex);
+        } else {
+            me.updateTabContent(tabPanel, sensorGroups);
+        }
+        
+        tabPanel.resumeLayouts(true);
+        console.log('✅ MainPanel: Tabs updated successfully');
+    },
+
+    /**
+     * Get active tab index
+     * @param {Object} tabPanel - Tab panel
+     * @returns {number} Active tab index
+     */
+    getActiveTabIndex: function(tabPanel) {
+        if (tabPanel.items.length > 0) {
+            var activeIndex = tabPanel.items.findIndex('active', true);
+            return activeIndex >= 0 ? activeIndex : 0;
+        }
+        return 0;
+    },
+
+    /**
+     * Check if tab rebuild is needed
+     * @param {Object} tabPanel - Tab panel
+     * @param {Object} sensorGroups - Sensor groups
+     * @returns {boolean} True if rebuild needed
+     */
+    needsTabRebuild: function(tabPanel, sensorGroups) {
+        var existingTitles = [];
+        tabPanel.items.each(function(tab) {
+            existingTitles.push(tab.title);
+        });
+        
+        var newTitles = Object.keys(sensorGroups);
+        return existingTitles.length !== newTitles.length ||
+               !Ext.Array.equals(existingTitles.sort(), newTitles.sort());
+    },
+
+    /**
+     * Rebuild tabs
+     * @param {Object} tabPanel - Tab panel
+     * @param {Object} sensorGroups - Sensor groups
+     */
+    rebuildTabs: function(tabPanel, sensorGroups) {
+        var me = this;
+        
+        console.log('🔄 MainPanel: Rebuilding tabs for groups:', Object.keys(sensorGroups));
+        
+        tabPanel.removeAll();
+        
+        Ext.Object.each(sensorGroups, function(groupName, sensorRows) {
+            var columnsHtml = me.generateColumnsHtml(sensorRows);
+            
+            tabPanel.add({
+                title: groupName,
+                closable: false,
+                iconCls: me.config.ui.tabIcon,
+                html: columnsHtml,
+                cls: 'dashpanel-tab-content'
+            });
+        });
+    },
+
+    /**
+     * Restore active tab
+     * @param {Object} tabPanel - Tab panel
+     * @param {number} activeIndex - Active tab index
+     */
+    restoreActiveTab: function(tabPanel, activeIndex) {
+        if (activeIndex < tabPanel.items.length) {
+            tabPanel.setActiveTab(activeIndex);
+        }
+    },
+
+    /**
+     * Update tab content only
+     * @param {Object} tabPanel - Tab panel
+     * @param {Object} sensorGroups - Sensor groups
+     */
+    updateTabContent: function(tabPanel, sensorGroups) {
+        var me = this;
+        
+        Ext.Object.each(sensorGroups, function(groupName, sensorRows) {
+            var existingTab = me.findTabByTitle(tabPanel, groupName);
+            if (existingTab) {
+                var columnsHtml = me.generateColumnsHtml(sensorRows);
+                existingTab.update(columnsHtml);
+            }
+        });
+    },
+
+    /**
+     * Find tab by title
+     * @param {Object} tabPanel - Tab panel
+     * @param {string} title - Tab title
+     * @returns {Object|null} Tab component or null
+     */
+    findTabByTitle: function(tabPanel, title) {
+        var foundTab = null;
+        tabPanel.items.each(function(tab) {
+            if (tab.title === title) {
+                foundTab = tab;
+                return false;
+            }
+        });
+        return foundTab;
+    },
+
+    /**
+     * Generate columns HTML for sensor display
+     * @param {Array} sensorRows - Array of sensor HTML rows
+     * @returns {string} HTML columns
+     */
+    generateColumnsHtml: function(sensorRows) {
+        var me = this;
+        
+        // Check for DTC table (requires full width)
+        if (me.containsDTCTable(sensorRows)) {
+            return me.generateFullWidthHTML(sensorRows);
+        }
+        
+        // Regular sensors - multi-column layout
+        return me.generateMultiColumnHTML(sensorRows);
+    },
+
+    /**
+     * Check if sensor rows contain DTC table
+     * @param {Array} sensorRows - Array of sensor rows
+     * @returns {boolean} True if contains DTC table
+     */
+    containsDTCTable: function(sensorRows) {
+        var containsDTC = false;
+        Ext.each(sensorRows, function(row) {
+            if (row.indexOf('Active Diagnostic Trouble Codes') > -1 || 
+                row.indexOf('No Active DTCs') > -1) {
+                containsDTC = true;
+                return false;
+            }
+        });
+        return containsDTC;
+    },
+
+    /**
+     * Generate full width HTML
+     * @param {Array} sensorRows - Array of sensor rows
+     * @returns {string} HTML
+     */
+    generateFullWidthHTML: function(sensorRows) {
+        var html = '';
+        Ext.each(sensorRows, function(row) {
+            html += row;
+        });
+        return '<div class="dashpanel-v4-full-width">' + html + '</div>';
+    },
+
+    /**
+     * Generate multi-column HTML
+     * @param {Array} sensorRows - Array of sensor rows
+     * @returns {string} HTML columns
+     */
+    generateMultiColumnHTML: function(sensorRows) {
+        var me = this;
+        var columns = me.config.sensors.defaultColumns;
+        var sensorsPerColumn = Math.ceil(sensorRows.length / columns);
+        var columnsHtml = '';
+        
+        for (var col = 0; col < columns; col++) {
+            var startIdx = col * sensorsPerColumn;
+            var endIdx = Math.min(startIdx + sensorsPerColumn, sensorRows.length);
+            
+            if (startIdx < sensorRows.length) {
+                columnsHtml += '<div class="dashpanel-v4-column">';
+                for (var i = startIdx; i < endIdx; i++) {
+                    columnsHtml += sensorRows[i];
+                }
+                columnsHtml += '</div>';
             }
         }
         
-        console.log('Successfully loaded real sensor data. Count:', sensorDataArray.length);
-        me.sensorGrid.getStore().loadData(sensorDataArray);
+        return '<div class="dashpanel-v4-columns-container">' + columnsHtml + '</div>';
     },
+
+    /**
+     * Show no data message
+     */
+    showNoDataMessage: function() {
+        var me = this;
+        var tabPanel = me.down('[itemId=sensorGroupTabs]');
+        
+        if (tabPanel) {
+            tabPanel.removeAll(true);
+            tabPanel.add({
+                title: 'No Data',
+                iconCls: 'fa fa-exclamation-triangle',
+                html: '<div class="dashpanel-v4-no-data">' +
+                      '<i class="fa fa-exclamation-triangle"></i>' +
+                      '<h3>No Sensor Data Available</h3>' +
+                      '<p>Unable to load sensor data for this vehicle</p>' +
+                      '</div>',
+                cls: 'dashpanel-v4-tab-content'
+            });
+            tabPanel.setActiveTab(0);
+        }
+    },
+
+    /**
+     * Start refresh timer
+     * @param {string} vehicleId - Vehicle ID
+     */
+    startRefreshTimer: function(vehicleId) {
+        var me = this;
+        
+        me.stopRefreshTimer();
+        
+        var refreshInterval = me.getValidatedRefreshInterval();
+        
+        me.refreshTask = setInterval(function() {
+            me.loadVehicleSensorData(vehicleId);
+        }, refreshInterval);
+        
+        console.log('🔄 MainPanel: Refresh timer started for vehicle:', vehicleId, 'interval:', refreshInterval + 'ms');
+    },
+
+    /**
+     * Get validated refresh interval
+     * @returns {number} Valid refresh interval in ms
+     */
+    getValidatedRefreshInterval: function() {
+        var me = this;
+        var interval = me.config.refresh.interval;
+        var minInterval = me.config.refresh.minInterval;
+        var maxInterval = me.config.refresh.maxInterval;
+        
+        if (interval < minInterval) {
+            console.warn('MainPanel: Refresh interval too low, using minimum:', minInterval + 'ms');
+            return minInterval;
+        }
+        
+        if (interval > maxInterval) {
+            console.warn('MainPanel: Refresh interval too high, using maximum:', maxInterval + 'ms');
+            return maxInterval;
+        }
+        
+        return interval;
+    },
+
+    /**
+     * Stop refresh timer
+     */
+    stopRefreshTimer: function() {
+        var me = this;
+        
+        if (me.refreshTask) {
+            clearInterval(me.refreshTask);
+            me.refreshTask = null;
+            console.log('🛑 MainPanel: Refresh timer stopped');
+        }
+    },
+
+    /**
+     * Show main panel
+     */
+    showPanel: function() {
+        var me = this;
+        
+        if (me.hidden) {
+            me.setHidden(false);
+            me.show();
+            console.log('🔧 MainPanel: Panel shown');
+        }
+    },
+
+    /**
+     * Hide main panel
+     */
+    hidePanel: function() {
+        var me = this;
+        
+        if (!me.hidden) {
+            me.setHidden(true);
+            me.hide();
+            console.log('🔧 MainPanel: Panel hidden');
+        }
+    },
+
+    // Helper methods for sensor processing
     
-    // Helper method to determine sensor type from name
+    /**
+     * Determine sensor type from name
+     * @param {string} sensorName - Sensor name
+     * @returns {string} Sensor type
+     */
     determineSensorType: function(sensorName) {
-        if (!sensorName) return 'generic';
+        if (!sensorName) return 'default';
         
         var name = sensorName.toLowerCase();
         if (name.includes('температур') || name.includes('temp')) return 'temperature';
@@ -523,69 +694,47 @@ Ext.define('Store.dashpanel.view.MainPanel', {
         if (name.includes('скорост') || name.includes('speed')) return 'speed';
         if (name.includes('нагрузк') || name.includes('вес') || name.includes('load') || name.includes('weight')) return 'weight';
         
-        return 'generic';
+        return 'default';
     },
-    
-    // Helper method to extract unit from human readable value
+
+    /**
+     * Extract unit from human value
+     * @param {string} humValue - Human readable value
+     * @returns {string} Unit string
+     */
     extractUnit: function(humValue) {
         if (!humValue) return '';
         
-        // Extract unit from strings like "14356 кг" or "25.5 V"
-        var matches = humValue.toString().match(/([a-zA-Zа-яА-Я°%]+)$/);
+        var matches = humValue.toString().match(/([a-zA-Zа-яА-Я°%/]+)$/);
         return matches ? matches[1] : '';
     },
-    
-    // Calculate status from sensor value based on type
-    calculateSensorStatusFromValue: function(value, sensorType) {
-        if (value === null || value === undefined) return 'unknown';
-        
-        // Basic heuristics for different sensor types
-        switch (sensorType) {
-            case 'temperature':
-                if (value > 100 || value < -20) return 'critical';
-                if (value > 80 || value < 0) return 'warning';
-                return 'normal';
-                
-            case 'voltage':
-                if (value > 15 || value < 10) return 'critical';
-                if (value > 14 || value < 11) return 'warning';
-                return 'normal';
-                
-            case 'pressure':
-                if (value > 100 || value < 0) return 'critical';
-                if (value > 80 || value < 10) return 'warning';
-                return 'normal';
-                
-            case 'level':
-                if (value < 5) return 'critical';
-                if (value < 15) return 'warning';
-                return 'normal';
-                
-            default:
-                return 'normal';
-        }
-    },
-    
-    getSensorIcon: function(sensorType) {
-        switch(sensorType) {
-            case 'temperature': return 'fa fa-thermometer-half';
-            case 'pressure': return 'fa fa-tachometer-alt';
-            case 'level': return 'fa fa-battery-half';
-            case 'voltage': return 'fa fa-bolt';
-            case 'speed': return 'fa fa-speedometer';
-            default: return 'fa fa-sensor';
-        }
-    },
-    
-    // Cleanup when panel is destroyed
-    onDestroy: function() {
+
+    /**
+     * Calculate sensor status based on thresholds
+     * @param {number} value - Sensor value
+     * @param {string} sensorType - Sensor type
+     * @returns {string} Status (normal, warning, critical, unknown)
+     */
+    calculateSensorStatus: function(value, sensorType) {
         var me = this;
         
-        if (me.refreshTask) {
-            clearInterval(me.refreshTask);
-            me.refreshTask = null;
+        if (value === null || value === undefined) return 'unknown';
+        
+        var thresholds = me.config.thresholds && me.config.thresholds[sensorType];
+        if (!thresholds) return 'normal';
+        
+        // Check critical thresholds
+        if (thresholds.critical) {
+            if (thresholds.critical.min !== undefined && value < thresholds.critical.min) return 'critical';
+            if (thresholds.critical.max !== undefined && value > thresholds.critical.max) return 'critical';
         }
         
-        me.callParent(arguments);
+        // Check warning thresholds
+        if (thresholds.warning) {
+            if (thresholds.warning.min !== undefined && value < thresholds.warning.min) return 'warning';
+            if (thresholds.warning.max !== undefined && value > thresholds.warning.max) return 'warning';
+        }
+        
+        return 'normal';
     }
 });
