@@ -470,15 +470,28 @@ Ext.define('Store.dashpanel.view.MainPanel', {
     getSensorIconById: function(sensorId, sensorName, sensorType) {
         var me = this;
         
+        console.log('🔍 getSensorIconById:', sensorId, sensorName, sensorType);
+        console.log('🔍 sensorIdToTagMapping:', me.sensorIdToTagMapping);
+        console.log('🔍 dashpanelModule.sensorTagsById:', window.dashpanelModule ? window.dashpanelModule.sensorTagsById : 'not available');
+        
         // First priority: Use sensor ID to tag ID mapping
         if (me.sensorIdToTagMapping && sensorId && me.sensorIdToTagMapping[sensorId]) {
             var tagId = me.sensorIdToTagMapping[sensorId];
+            console.log('🔍 Found tagId:', tagId, 'for sensorId:', sensorId);
+            
             if (window.dashpanelModule && window.dashpanelModule.sensorTagsById && window.dashpanelModule.sensorTagsById[tagId]) {
-                return window.dashpanelModule.sensorTagsById[tagId];
+                var icon = window.dashpanelModule.sensorTagsById[tagId];
+                console.log('✅ Using tag icon:', icon, 'for sensor:', sensorName);
+                return icon;
+            } else {
+                console.warn('⚠️ Tag ID', tagId, 'not found in global cache for sensor:', sensorName);
             }
+        } else {
+            console.warn('⚠️ Sensor ID', sensorId, 'not found in mapping for sensor:', sensorName);
         }
         
         // Fallback to name-based mapping
+        console.log('🔄 Falling back to name-based mapping for:', sensorName);
         return me.getSensorIcon(sensorName, sensorType);
     },
 
