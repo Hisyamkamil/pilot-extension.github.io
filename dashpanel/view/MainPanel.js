@@ -9,6 +9,7 @@ Ext.define('Store.dashpanel.view.MainPanel', {
     currentVehicleName: null,
     currentVehicleRecord: null,
     vehicleSensorMappings: null,
+    sensorIdToTagMapping: null,
 
     /**
      * Initialize main sensor panel component
@@ -148,17 +149,25 @@ Ext.define('Store.dashpanel.view.MainPanel', {
     processVehicleSensorMappings: function(sensors) {
         var me = this;
         me.vehicleSensorMappings = {};
+        me.sensorIdToTagMapping = {};
         
         if (Ext.isArray(sensors)) {
             Ext.each(sensors, function(sensor) {
+                if (sensor.sensorid && sensor.tags && Ext.isArray(sensor.tags) && sensor.tags.length > 0) {
+                    // Map sensor ID to first tag ID (primary tag)
+                    me.sensorIdToTagMapping[sensor.sensorid] = sensor.tags[0];
+                }
+                
                 if (sensor.info && sensor.tags && Ext.isArray(sensor.tags) && sensor.tags.length > 0) {
-                    // Map sensor name to first tag ID (primary tag)
+                    // Also map sensor name to first tag ID for fallback
                     me.vehicleSensorMappings[sensor.info.toLowerCase()] = sensor.tags[0];
                 }
             });
         }
         
-        console.log('✅ MainPanel: Vehicle sensor mappings processed:', Object.keys(me.vehicleSensorMappings).length, 'sensors mapped');
+        console.log('✅ MainPanel: Vehicle sensor mappings processed:',
+                   Object.keys(me.sensorIdToTagMapping).length, 'sensor ID mappings,',
+                   Object.keys(me.vehicleSensorMappings).length, 'name mappings');
     },
 
     /**
@@ -373,6 +382,7 @@ Ext.define('Store.dashpanel.view.MainPanel', {
         
         if (parts.length >= 5) {
             var humanValue = parts[0];
+            var sensorId = parts[2]; // Sensor ID from API response
             var digitalValue = parseFloat(parts[3]);
             var groupName = parts[4] || 'No Group';
             var sensorType = me.determineSensorType(sensorName);
@@ -388,7 +398,8 @@ Ext.define('Store.dashpanel.view.MainPanel', {
                 value: digitalValue,
                 unit: me.extractUnit(humanValue),
                 status: status,
-                icon: me.getSensorIcon(sensorName, sensorType)
+                sensorId: sensorId,
+                icon: me.getSensorIconById(sensorId, sensorName, sensorType)
             }));
         }
     },
@@ -450,19 +461,52 @@ Ext.define('Store.dashpanel.view.MainPanel', {
     },
 
     /**
-     * Get sensor icon from module cache or configuration fallback
+     * Get sensor icon using sensor ID mapping (primary method)
+     * @param {string} sensorId - Sensor ID from API response
+     * @param {string} sensorName - Sensor name (fallback)
+     * @param {string} sensorType - Sensor type (fallback)
+     * @returns {string} CSS icon class
+     */
+    getSensorIconById: function(sensorId, sensorName, sensorType) {
+        var me = this;
+        
+        // First priority: Use sensor ID to tag ID mapping
+        if (me.sensorIdToTagMapping && sensorId && me.sensorIdToTagMapping[sensorId]) {
+            var tagId = me.sensorIdToTagMapping[sensorId];
+            if (window.dashpanelModule && window.dashpanelModule.sensorTagsById && window.dashpanelModule.sensorTagsById[tagId]) {
+                return window.dashpanelModule.sensorTagsById[tagId];
+            }
+        }
+        
+        // Fallback to name-based mapping
+        return me.getSensorIcon(sensorName, sensorType);
+    },
+
+    /**
+     * Get sensor icon from module cache or configuration fallback (fallback method)
      * @param {string} sensorName - Sensor name
      * @param {string} sensorType - Sensor type (fallback)
      * @returns {string} CSS icon class
      */
     getSensorIcon: function(sensorName, sensorType) {
-        // Use module's sensor icon cache first
+        var me = this;
+        
+        // Check vehicle-specific name mapping
+        if (me.vehicleSensorMappings && sensorName) {
+            var sensorKey = sensorName.toLowerCase();
+            var tagId = me.vehicleSensorMappings[sensorKey];
+            
+            if (tagId && window.dashpanelModule && window.dashpanelModule.sensorTagsById && window.dashpanelModule.sensorTagsById[tagId]) {
+                return window.dashpanelModule.sensorTagsById[tagId];
+            }
+        }
+        
+        // Use module's general sensor icon cache
         if (window.dashpanelModule && window.dashpanelModule.getSensorIcon) {
             return window.dashpanelModule.getSensorIcon(sensorName, sensorType);
         }
         
-        // Fallback to local config
-        var me = this;
+        // Final fallback to local config
         return me.config.icons[sensorType] || me.config.icons.default;
     },
 
