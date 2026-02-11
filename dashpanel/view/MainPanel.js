@@ -273,38 +273,110 @@ Ext.define('Store.dashpanel.view.MainPanel', {
     },
 
     /**
-     * Add basic vehicle sensors to groups
+     * Add vehicle information tab with complete vehicle details
      * @param {Object} sensorGroups - Sensor groups object
-     * @param {Object} vehicle - Vehicle data
+     * @param {Object} vehicle - Vehicle data from current_data API
      */
     addBasicVehicleSensors: function(sensorGroups, vehicle) {
         var me = this;
         
-        if (!sensorGroups['Vehicle']) {
-            sensorGroups['Vehicle'] = [];
+        if (!sensorGroups['Vehicle Information']) {
+            sensorGroups['Vehicle Information'] = [];
         }
 
-        if (vehicle.last_event && vehicle.last_event.speed !== undefined) {
-            sensorGroups['Vehicle'].push(me.createSensorRow({
-                name: 'Vehicle Speed',
-                type: 'speed',
-                value: vehicle.last_event.speed,
-                unit: 'km/h',
-                status: vehicle.last_event.speed > 80 ? 'warning' : 'normal',
-                icon: me.getSensorIcon('Vehicle Speed', 'speed')
-            }));
-        }
+        // Get vehicle details from navigation tree record
+        var vehicleRecord = me.currentVehicleRecord;
+        
+        if (vehicleRecord) {
+            // Vehicle Details Section
+            sensorGroups['Vehicle Information'].push(me.createVehicleInfoSection('Vehicle Details', [
+                { label: 'Vehicle Name', value: vehicleRecord.get('name') || vehicle.name || 'N/A' },
+                { label: 'Model', value: vehicleRecord.get('model') || 'N/A' },
+                { label: 'Year', value: vehicleRecord.get('year') || 'N/A' },
+                { label: 'VIN', value: vehicleRecord.get('vin') || 'N/A' },
+                { label: 'Type', value: vehicleRecord.get('typename') || 'N/A' },
+                { label: 'Configuration', value: vehicleRecord.get('configuration') || 'N/A' }
+            ]));
 
-        if (vehicle.firing !== undefined) {
-            sensorGroups['Vehicle'].push(me.createSensorRow({
-                name: 'Engine Status',
-                type: 'engine',
-                value: vehicle.firing ? 'ON' : 'OFF',
-                unit: '',
-                status: 'normal',
-                icon: me.getSensorIcon('Ignition', 'engine')
-            }));
+            // Current Status Section
+            sensorGroups['Vehicle Information'].push(me.createVehicleInfoSection('Current Status', [
+                { label: 'Engine Status', value: vehicle.firing ? 'ON' : 'OFF', status: 'normal' },
+                { label: 'Equipment Status', value: vehicle.equipment || 'N/A' },
+                { label: 'Current Speed', value: (vehicle.last_event && vehicle.last_event.speed !== undefined) ? vehicle.last_event.speed + ' km/h' : 'N/A' },
+                { label: 'Motor Hours', value: vehicleRecord.get('current_motohours') ? me.formatMotorHours(vehicleRecord.get('current_motohours')) : vehicle.motor_hours ? me.formatMotorHours(vehicle.motor_hours) : 'N/A' }
+            ]));
+
+            // Location & Last Event Section
+            if (vehicle.last_event) {
+                sensorGroups['Vehicle Information'].push(me.createVehicleInfoSection('Location & Last Event', [
+                    { label: 'Current Location', value: vehicle.lat && vehicle.lon ? me.formatCoordinates(vehicle.lat, vehicle.lon) : 'N/A' },
+                    { label: 'Last Event', value: vehicle.last_event.text || vehicle.last_event.type || 'N/A' },
+                    { label: 'Last Event Time', value: vehicle.last_event.unixtimestamp ? me.formatTimestamp(vehicle.last_event.unixtimestamp) : 'N/A' },
+                    { label: 'Satellites', value: vehicle.satsinview || 'N/A' }
+                ]));
+            }
         }
+    },
+
+    /**
+     * Create vehicle information section HTML
+     * @param {string} sectionTitle - Section title
+     * @param {Array} items - Array of {label, value, status} objects
+     * @returns {string} Section HTML
+     */
+    createVehicleInfoSection: function(sectionTitle, items) {
+        var sectionHtml = '<div style="margin-bottom: 15px;">';
+        sectionHtml += '<h4 style="margin: 0 0 8px 0; padding: 5px 0; border-bottom: 1px solid #ddd; color: #333; font-size: 12px; font-weight: bold;">' + sectionTitle + '</h4>';
+        
+        Ext.each(items, function(item) {
+            var statusColor = item.status === 'warning' ? '#ff8c00' : item.status === 'critical' ? '#ff0000' : '#333';
+            sectionHtml += '<div style="display: flex; justify-content: space-between; padding: 3px 0; font-size: 11px;">';
+            sectionHtml += '<span style="color: #666; font-weight: 500;">' + item.label + ':</span>';
+            sectionHtml += '<span style="color: ' + statusColor + '; font-weight: bold;">' + item.value + '</span>';
+            sectionHtml += '</div>';
+        });
+        
+        sectionHtml += '</div>';
+        return sectionHtml;
+    },
+
+    /**
+     * Format motor hours for display
+     * @param {number} motorHours - Motor hours in seconds or hours
+     * @returns {string} Formatted motor hours
+     */
+    formatMotorHours: function(motorHours) {
+        if (!motorHours || motorHours === 0) return '0 hrs';
+        
+        // If value is very large, assume it's in seconds, convert to hours
+        if (motorHours > 100000) {
+            var hours = Math.floor(motorHours / 3600);
+            return hours.toLocaleString() + ' hrs';
+        }
+        
+        return motorHours.toLocaleString() + ' hrs';
+    },
+
+    /**
+     * Format coordinates for display
+     * @param {string|number} lat - Latitude
+     * @param {string|number} lon - Longitude
+     * @returns {string} Formatted coordinates
+     */
+    formatCoordinates: function(lat, lon) {
+        if (!lat || !lon || lat == 0 || lon == 0) return 'No GPS Signal';
+        return parseFloat(lat).toFixed(6) + ', ' + parseFloat(lon).toFixed(6);
+    },
+
+    /**
+     * Format timestamp for display
+     * @param {string|number} timestamp - Unix timestamp
+     * @returns {string} Formatted date/time
+     */
+    formatTimestamp: function(timestamp) {
+        if (!timestamp) return 'N/A';
+        var date = new Date(parseInt(timestamp) * 1000);
+        return date.toLocaleString();
     },
 
     /**
