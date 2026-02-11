@@ -8,6 +8,7 @@ Ext.define('Store.dashpanel.view.MainPanel', {
     currentVehicleId: null,
     currentVehicleName: null,
     currentVehicleRecord: null,
+    vehicleSensorMappings: null,
 
     /**
      * Initialize main sensor panel component
@@ -70,7 +71,7 @@ Ext.define('Store.dashpanel.view.MainPanel', {
             sensors: { dtcDetectionKeyword: 'group by active dtc', defaultColumns: 3 },
             colors: { normal: '#008000', warning: '#ff8c00', critical: '#ff0000' },
             icons: { default: 'fa fa-microchip' },
-            api: { primaryUrl: '/backend/ax/current_data.php', fallbackUrl: 'https://dev-telematics.mst.co.id/backend/ax/current_data.php', timeout: 30000 },
+            api: { url: '/ax/current_data.php', timeout: 30000 },
             refresh: { interval: 500, minInterval: 100, maxInterval: 10000 }
         };
     },
@@ -91,10 +92,73 @@ Ext.define('Store.dashpanel.view.MainPanel', {
         me.currentVehicleRecord = vehicleRecord;
         
         me.setTitle('Sensor Monitor - ' + vehicleName);
-        me.loadVehicleSensorData(vehicleId);
-        me.startRefreshTimer(vehicleId);
+        
+        // Load vehicle-specific sensor mappings first, then load data
+        me.loadVehicleSensorMappings(vehicleId, function() {
+            me.loadVehicleSensorData(vehicleId);
+            me.startRefreshTimer(vehicleId);
+        });
         
         console.log('✅ MainPanel: Vehicle sensor loading initiated');
+    },
+
+    /**
+     * Load vehicle-specific sensor mappings
+     * @param {string} vehicleId - Vehicle ID
+     * @param {Function} callback - Callback function
+     */
+    loadVehicleSensorMappings: function(vehicleId, callback) {
+        var me = this;
+        
+        console.log('🔄 MainPanel: Loading sensor mappings for vehicle:', vehicleId);
+        
+        Ext.Ajax.request({
+            url: window.location.origin + '/ax/sensors/sensors.php',
+            method: 'POST',
+            timeout: 30000,
+            params: {
+                agent_id: vehicleId,
+                page: 1,
+                start: 0,
+                limit: 100
+            },
+            success: function(response) {
+                try {
+                    var sensors = Ext.decode(response.responseText);
+                    me.processVehicleSensorMappings(sensors);
+                    console.log('✅ MainPanel: Vehicle sensor mappings loaded:', Object.keys(me.vehicleSensorMappings || {}).length, 'mappings');
+                } catch (e) {
+                    console.warn('⚠️ MainPanel: Failed to parse vehicle sensor mappings:', e);
+                    me.vehicleSensorMappings = {};
+                }
+                callback();
+            },
+            failure: function(response) {
+                console.warn('⚠️ MainPanel: Failed to load vehicle sensor mappings:', response.status);
+                me.vehicleSensorMappings = {};
+                callback();
+            }
+        });
+    },
+
+    /**
+     * Process vehicle sensor mappings response
+     * @param {Array} sensors - Array of sensor objects
+     */
+    processVehicleSensorMappings: function(sensors) {
+        var me = this;
+        me.vehicleSensorMappings = {};
+        
+        if (Ext.isArray(sensors)) {
+            Ext.each(sensors, function(sensor) {
+                if (sensor.info && sensor.tags && Ext.isArray(sensor.tags) && sensor.tags.length > 0) {
+                    // Map sensor name to first tag ID (primary tag)
+                    me.vehicleSensorMappings[sensor.info.toLowerCase()] = sensor.tags[0];
+                }
+            });
+        }
+        
+        console.log('✅ MainPanel: Vehicle sensor mappings processed:', Object.keys(me.vehicleSensorMappings).length, 'sensors mapped');
     },
 
     /**
@@ -217,7 +281,8 @@ Ext.define('Store.dashpanel.view.MainPanel', {
                 type: 'speed',
                 value: vehicle.last_event.speed,
                 unit: 'km/h',
-                status: vehicle.last_event.speed > 80 ? 'warning' : 'normal'
+                status: vehicle.last_event.speed > 80 ? 'warning' : 'normal',
+                icon: me.getSensorIcon('Vehicle Speed', 'speed')
             }));
         }
 
@@ -227,7 +292,8 @@ Ext.define('Store.dashpanel.view.MainPanel', {
                 type: 'engine',
                 value: vehicle.firing ? 'ON' : 'OFF',
                 unit: '',
-                status: 'normal'
+                status: 'normal',
+                icon: me.getSensorIcon('Ignition', 'engine')
             }));
         }
     },
@@ -321,7 +387,8 @@ Ext.define('Store.dashpanel.view.MainPanel', {
                 type: sensorType,
                 value: digitalValue,
                 unit: me.extractUnit(humanValue),
-                status: status
+                status: status,
+                icon: me.getSensorIcon(sensorName, sensorType)
             }));
         }
     },
@@ -334,7 +401,7 @@ Ext.define('Store.dashpanel.view.MainPanel', {
     createSensorRow: function(sensor) {
         var me = this;
         var statusColor = me.getStatusColor(sensor.status);
-        var sensorIcon = me.getSensorIcon(sensor.type);
+        var sensorIcon = sensor.icon || me.getSensorIcon(sensor.name, sensor.type);
         var formattedValue = me.formatSensorValue(sensor.value);
         
         // V3-style inline layout for precise spacing
@@ -383,11 +450,18 @@ Ext.define('Store.dashpanel.view.MainPanel', {
     },
 
     /**
-     * Get sensor icon from configuration
-     * @param {string} sensorType - Sensor type
+     * Get sensor icon from module cache or configuration fallback
+     * @param {string} sensorName - Sensor name
+     * @param {string} sensorType - Sensor type (fallback)
      * @returns {string} CSS icon class
      */
-    getSensorIcon: function(sensorType) {
+    getSensorIcon: function(sensorName, sensorType) {
+        // Use module's sensor icon cache first
+        if (window.dashpanelModule && window.dashpanelModule.getSensorIcon) {
+            return window.dashpanelModule.getSensorIcon(sensorName, sensorType);
+        }
+        
+        // Fallback to local config
         var me = this;
         return me.config.icons[sensorType] || me.config.icons.default;
     },
