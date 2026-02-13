@@ -599,7 +599,6 @@ Ext.define('Store.dashpanel.view.MainPanel', {
         return '<div style="text-align: center; padding: 20px; color: #666; border: 1px solid #ddd; border-radius: 4px; background: #f9f9f9;">' +
                '<i class="fa fa-check-circle" style="font-size: 24px; color: #00a65a;"></i>' +
                '<h5 style="margin: 10px 0;">' + message + '</h5>' +
-               '<p style="margin: 0; font-size: 11px;">All systems operating normally</p>' +
                '</div>';
     },
     /**
@@ -622,7 +621,6 @@ Ext.define('Store.dashpanel.view.MainPanel', {
                    '">' +
                    '<i class="fa fa-check-circle" style="font-size: 24px; color: #00a65a; margin-bottom: 8px;"></i>' +
                    '<div style="font-size: 13px; font-weight: 500;">No DTCs found</div>' +
-                   '<div style="font-size: 11px; color: #888; margin-top: 4px;">All systems operating normally</div>' +
                    '</div>';
         }
         
