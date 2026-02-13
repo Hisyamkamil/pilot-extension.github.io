@@ -396,13 +396,28 @@ Ext.define('Store.dashpanel.view.MainPanel', {
 
         console.log('MainPanel: Processing', Object.keys(vehicle.sensors).length, 'sensors...');
         
+        // Collect DTC sensors for combined processing
+        var dtcSensors = {
+            active: null,
+            previous: null
+        };
+        
         Ext.Object.each(vehicle.sensors, function(sensorName, sensorValue) {
             if (me.isDTCSensor(sensorName)) {
                 me.processDTCSensor(sensorGroups, sensorValue);
+            } else if (me.isActiveDTCSensor(sensorName)) {
+                dtcSensors.active = sensorValue;
+            } else if (me.isPreviousActiveDTCSensor(sensorName)) {
+                dtcSensors.previous = sensorValue;
             } else {
                 me.processRegularSensor(sensorGroups, sensorName, sensorValue);
             }
         });
+        
+        // Process combined DTC data if found
+        if (dtcSensors.active || dtcSensors.previous) {
+            me.processCombinedDTCSensors(sensorGroups, dtcSensors);
+        }
     },
 
     /**
@@ -414,6 +429,175 @@ Ext.define('Store.dashpanel.view.MainPanel', {
         var me = this;
         var keyword = me.config.sensors.dtcDetectionKeyword.toLowerCase();
         return sensorName && sensorName.toLowerCase().includes(keyword);
+    },
+
+    /**
+     * Check if sensor is Active DTC sensor
+     * @param {string} sensorName - Sensor name
+     * @returns {boolean} True if Active DTC sensor
+     */
+    isActiveDTCSensor: function(sensorName) {
+        return sensorName && sensorName.toLowerCase() === 'active dtc';
+    },
+
+    /**
+     * Check if sensor is Previous Active DTC sensor
+     * @param {string} sensorName - Sensor name
+     * @returns {boolean} True if Previous Active DTC sensor
+     */
+    isPreviousActiveDTCSensor: function(sensorName) {
+        return sensorName && sensorName.toLowerCase() === 'previous active dtc';
+    },
+
+    /**
+     * Process combined Active and Previous Active DTC sensors
+     * @param {Object} sensorGroups - Sensor groups object
+     * @param {Object} dtcSensors - Object with active and previous DTC sensor values
+     */
+    processCombinedDTCSensors: function(sensorGroups, dtcSensors) {
+        var me = this;
+        
+        console.log('🔧 MainPanel: Processing combined DTC sensors (Active + Previous)');
+        
+        if (!sensorGroups['DTC']) {
+            sensorGroups['DTC'] = [];
+        }
+
+        try {
+            var dtcHandler = me.getDTCHandlerInstance();
+            
+            if (dtcHandler) {
+                var combinedHtml = me.createCombinedDTCDisplay(dtcSensors, dtcHandler);
+                sensorGroups['DTC'].push('<div class="dashpanel-dtc-container">' + combinedHtml + '</div>');
+                console.log('✅ MainPanel: Combined DTC display created successfully');
+            } else {
+                // Fallback display
+                me.createFallbackCombinedDTCDisplay(sensorGroups, dtcSensors);
+            }
+            
+        } catch (e) {
+            console.error('❌ MainPanel: Error processing combined DTC data:', e);
+            me.createFallbackCombinedDTCDisplay(sensorGroups, dtcSensors);
+        }
+    },
+
+    /**
+     * Create combined DTC display with Active and Previous sections
+     * @param {Object} dtcSensors - Object with active and previous sensor values
+     * @param {Object} dtcHandler - DTCHandler instance
+     * @returns {string} Combined HTML display
+     */
+    createCombinedDTCDisplay: function(dtcSensors, dtcHandler) {
+        var me = this;
+        var combinedHtml = '<div style="display: flex; gap: 20px; padding: 10px;">';
+        
+        // Left column: Active DTCs
+        combinedHtml += '<div style="flex: 1;">';
+        combinedHtml += '<h4 style="margin: 0 0 10px 0; color: #d73027; text-align: center;">';
+        combinedHtml += '<i class="fa fa-exclamation-triangle"></i> Active DTCs</h4>';
+        
+        if (dtcSensors.active) {
+            var activeDTCData = me.extractDTCFromSensorValue(dtcSensors.active);
+            var activeDTCList = dtcHandler.parseDTCData(activeDTCData);
+            combinedHtml += dtcHandler.createDTCTableOnly(activeDTCList);
+        } else {
+            combinedHtml += me.createNoDTCMessage('No Active DTCs');
+        }
+        combinedHtml += '</div>';
+        
+        // Right column: Previous Active DTCs
+        combinedHtml += '<div style="flex: 1;">';
+        combinedHtml += '<h4 style="margin: 0 0 10px 0; color: #ff8c00; text-align: center;">';
+        combinedHtml += '<i class="fa fa-history"></i> Previous Active DTCs</h4>';
+        
+        if (dtcSensors.previous) {
+            var previousDTCData = me.extractDTCFromSensorValue(dtcSensors.previous);
+            var previousDTCList = dtcHandler.parseDTCData(previousDTCData);
+            combinedHtml += dtcHandler.createDTCTableOnly(previousDTCList);
+        } else {
+            combinedHtml += me.createNoDTCMessage('No Previous Active DTCs');
+        }
+        combinedHtml += '</div>';
+        
+        combinedHtml += '</div>';
+        return combinedHtml;
+    },
+
+    /**
+     * Extract DTC data from sensor value (either from parts[5] for DTC group or direct value)
+     * @param {string} sensorValue - Sensor value string
+     * @returns {string} DTC data for parsing
+     */
+    extractDTCFromSensorValue: function(sensorValue) {
+        var me = this;
+        var parts = sensorValue.split('|');
+        
+        if (parts.length >= 6 && parts[5]) {
+            // Extract hex data from parts[5] and convert
+            return me.convertHexToDTCFormat(parts[5]);
+        } else {
+            // Use the sensor value as-is
+            return sensorValue;
+        }
+    },
+
+    /**
+     * Create "No DTC" message for combined display
+     * @param {string} message - Message text
+     * @returns {string} HTML message
+     */
+    createNoDTCMessage: function(message) {
+        return '<div style="text-align: center; padding: 20px; color: #666; border: 1px solid #ddd; border-radius: 4px; background: #f9f9f9;">' +
+               '<i class="fa fa-check-circle" style="font-size: 24px; color: #00a65a;"></i>' +
+               '<h5 style="margin: 10px 0;">' + message + '</h5>' +
+               '<p style="margin: 0; font-size: 11px;">All systems operating normally</p>' +
+               '</div>';
+    },
+
+    /**
+     * Create fallback combined DTC display when DTCHandler is not available
+     * @param {Object} sensorGroups - Sensor groups object
+     * @param {Object} dtcSensors - Object with active and previous sensor values
+     */
+    createFallbackCombinedDTCDisplay: function(sensorGroups, dtcSensors) {
+        var me = this;
+        
+        console.log('🔄 MainPanel: Creating fallback combined DTC display');
+        
+        var fallbackHtml = '<div style="display: flex; gap: 20px; padding: 10px;">';
+        
+        // Left: Active DTCs
+        fallbackHtml += '<div style="flex: 1;">';
+        fallbackHtml += '<h4 style="margin: 0 0 10px 0; color: #d73027; text-align: center;">Active DTCs</h4>';
+        if (dtcSensors.active) {
+            fallbackHtml += '<div style="background: #f9f9f9; padding: 10px; border: 1px solid #ddd; font-family: monospace; font-size: 11px;">';
+            fallbackHtml += 'Raw data: ' + dtcSensors.active.substring(0, 100) + '...';
+            fallbackHtml += '</div>';
+        } else {
+            fallbackHtml += me.createNoDTCMessage('No Active DTCs');
+        }
+        fallbackHtml += '</div>';
+        
+        // Right: Previous Active DTCs
+        fallbackHtml += '<div style="flex: 1;">';
+        fallbackHtml += '<h4 style="margin: 0 0 10px 0; color: #ff8c00; text-align: center;">Previous Active DTCs</h4>';
+        if (dtcSensors.previous) {
+            fallbackHtml += '<div style="background: #f9f9f9; padding: 10px; border: 1px solid #ddd; font-family: monospace; font-size: 11px;">';
+            fallbackHtml += 'Raw data: ' + dtcSensors.previous.substring(0, 100) + '...';
+            fallbackHtml += '</div>';
+        } else {
+            fallbackHtml += me.createNoDTCMessage('No Previous Active DTCs');
+        }
+        fallbackHtml += '</div>';
+        
+        fallbackHtml += '</div>';
+        fallbackHtml += '<div style="margin-top: 10px; font-size: 10px; color: #666; text-align: center;">';
+        fallbackHtml += '<em>Note: DTCHandler not available. Showing raw DTC data.</em>';
+        fallbackHtml += '</div>';
+        
+        sensorGroups['DTC'].push('<div class="dashpanel-dtc-container">' + fallbackHtml + '</div>');
+        
+        console.log('✅ MainPanel: Fallback combined DTC display created');
     },
 
     /**
