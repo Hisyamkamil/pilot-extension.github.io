@@ -603,6 +603,7 @@ Ext.define('Store.dashpanel.view.MainPanel', {
                '</div>';
     },
 
+
     /**
      * Create fallback combined DTC display when DTCHandler is not available
      * @param {Object} sensorGroups - Sensor groups object
