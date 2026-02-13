@@ -212,6 +212,62 @@ Ext.define('Store.dashpanel.view.DTCHandler', {
                '<tbody>' + tableRows + '</tbody>' +
                '</table>';
     },
+
+    /**
+     * Create responsive DTC table for combined displays
+     * @param {Array} dtcList - Array of DTC objects
+     * @returns {string} Responsive HTML table
+     */
+    createResponsiveDTCTable: function(dtcList) {
+        if (!dtcList || dtcList.length === 0) {
+            return '<div style="' +
+                   'text-align: center; ' +
+                   'padding: 20px; ' +
+                   'color: #666; ' +
+                   'border: 1px solid #ddd; ' +
+                   'border-radius: 6px; ' +
+                   'background: #f9f9f9; ' +
+                   'margin: 5px 0;' +
+                   '">' +
+                   '<i class="fa fa-check-circle" style="font-size: 24px; color: #00a65a; margin-bottom: 8px;"></i>' +
+                   '<div style="font-size: 13px; font-weight: 500;">No DTCs found</div>' +
+                   '<div style="font-size: 11px; color: #888; margin-top: 4px;">All systems operating normally</div>' +
+                   '</div>';
+        }
+        
+        var tableRows = this.createTableRows(dtcList);
+        
+        return '<div style="overflow-x: auto; margin: 5px 0;">' +
+               '<table style="' +
+               'width: 100%; ' +
+               'border-collapse: collapse; ' +
+               'font-size: 10px; ' +
+               'border: 1px solid #ddd; ' +
+               'background: white; ' +
+               'border-radius: 4px; ' +
+               'overflow: hidden;' +
+               '">' +
+               this.getResponsiveTableHeaderHTML() +
+               '<tbody>' + tableRows + '</tbody>' +
+               '</table>' +
+               '</div>';
+    },
+
+    /**
+     * Get responsive table header HTML with better styling
+     * @returns {string} HTML table header
+     */
+    getResponsiveTableHeaderHTML: function() {
+        return '<thead>' +
+               '<tr style="background: linear-gradient(to bottom, #f8f9fa, #e9ecef); border-bottom: 2px solid #dee2e6;">' +
+               '<th style="padding: 8px 6px; text-align: center; border-right: 1px solid #dee2e6; font-weight: bold; font-size: 9px; color: #495057;">MCU</th>' +
+               '<th style="padding: 8px 6px; text-align: center; border-right: 1px solid #dee2e6; font-weight: bold; font-size: 9px; color: #495057;">SPN</th>' +
+               '<th style="padding: 8px 6px; text-align: center; border-right: 1px solid #dee2e6; font-weight: bold; font-size: 9px; color: #495057;">FMI</th>' +
+               '<th style="padding: 8px 6px; text-align: center; border-right: 1px solid #dee2e6; font-weight: bold; font-size: 9px; color: #495057;">OC</th>' +
+               '<th style="padding: 8px 6px; text-align: left; font-weight: bold; font-size: 9px; color: #495057;">Description</th>' +
+               '</tr>' +
+               '</thead>';
+    },
     
     /**
      * Create table header with DTC count
