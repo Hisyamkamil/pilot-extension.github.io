@@ -232,10 +232,14 @@ Ext.define('Store.dashpanel.view.DTCHandler', {
             var rowStyle = index % 2 === 0 ? 'background: #ffffff;' : 'background: #f9f9f9;';
             var description = this.getDTCDescription(dtc.spn, dtc.fmi);
             
+            // Convert SPN and FMI to hexadecimal for display (without 0x prefix)
+            var spnHex = dtc.spn.toString(16).toUpperCase();
+            var fmiHex = dtc.fmi.toString(16).toUpperCase();
+            
             rows += '<tr style="' + rowStyle + '">' +
                     '<td style="padding: 6px 4px; text-align: center; border: 1px solid #ddd;">' + dtc.mcuSource + '</td>' +
-                    '<td style="padding: 6px 4px; text-align: center; border: 1px solid #ddd; font-family: monospace;">' + dtc.spn + '</td>' +
-                    '<td style="padding: 6px 4px; text-align: center; border: 1px solid #ddd; font-family: monospace;">' + dtc.fmi + '</td>' +
+                    '<td style="padding: 6px 4px; text-align: center; border: 1px solid #ddd; font-family: monospace;">' + spnHex + '</td>' +
+                    '<td style="padding: 6px 4px; text-align: center; border: 1px solid #ddd; font-family: monospace;">' + fmiHex + '</td>' +
                     '<td style="padding: 6px 4px; text-align: center; border: 1px solid #ddd; font-family: monospace;">' + dtc.oc + '</td>' +
                     '<td style="padding: 6px 4px; text-align: left; border: 1px solid #ddd; color: #333;">' + description + '</td>' +
                     '</tr>';
