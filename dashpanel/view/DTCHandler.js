@@ -232,9 +232,10 @@ Ext.define('Store.dashpanel.view.DTCHandler', {
             var rowStyle = index % 2 === 0 ? 'background: #ffffff;' : 'background: #f9f9f9;';
             var description = this.getDTCDescription(dtc.spn, dtc.fmi);
             
-            // Convert SPN and FMI to hexadecimal for display (without 0x prefix)
-            var spnHex = dtc.spn.toString(16).toUpperCase();
-            var fmiHex = dtc.fmi.toString(16).toUpperCase();
+            // Convert SPN and FMI to hexadecimal with proper padding
+            // SPN: always 5 digits, FMI: always 2 digits
+            var spnHex = dtc.spn.toString(16).toUpperCase().padStart(5, '0');
+            var fmiHex = dtc.fmi.toString(16).toUpperCase().padStart(2, '0');
             
             rows += '<tr style="' + rowStyle + '">' +
                     '<td style="padding: 6px 4px; text-align: center; border: 1px solid #ddd;">' + dtc.mcuSource + '</td>' +
