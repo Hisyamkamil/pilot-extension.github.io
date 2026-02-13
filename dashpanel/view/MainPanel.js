@@ -489,37 +489,86 @@ Ext.define('Store.dashpanel.view.MainPanel', {
      */
     createCombinedDTCDisplay: function(dtcSensors, dtcHandler) {
         var me = this;
-        var combinedHtml = '<div style="display: flex; gap: 20px; padding: 10px;">';
+        
+        // Responsive container with proper flexbox layout
+        var combinedHtml = '<div style="' +
+            'display: flex; ' +
+            'flex-wrap: wrap; ' +
+            'gap: 15px; ' +
+            'padding: 10px; ' +
+            'width: 100%; ' +
+            'box-sizing: border-box;' +
+            '">';
         
         // Left column: Active DTCs
-        combinedHtml += '<div style="flex: 1;">';
-        combinedHtml += '<h4 style="margin: 0 0 10px 0; color: #d73027; text-align: center;">';
-        combinedHtml += '<i class="fa fa-exclamation-triangle"></i> Active DTCs</h4>';
+        combinedHtml += '<div style="' +
+            'flex: 1 1 45%; ' +  // Flexible, minimum 45% width
+            'min-width: 300px; ' +  // Minimum width for readability
+            'max-width: calc(50% - 8px); ' +  // Maximum 50% minus gap
+            'box-sizing: border-box;' +
+            '">';
+        combinedHtml += '<h4 style="' +
+            'margin: 0 0 12px 0; ' +
+            'color: #d73027; ' +
+            'text-align: center; ' +
+            'font-size: 13px; ' +
+            'font-weight: bold; ' +
+            'padding: 8px; ' +
+            'border-bottom: 2px solid #d73027; ' +
+            'background: rgba(215, 48, 39, 0.05);' +
+            '">' +
+            '<i class="fa fa-exclamation-triangle"></i> Active DTCs</h4>';
         
         if (dtcSensors.active) {
             var activeDTCData = me.extractDTCFromSensorValue(dtcSensors.active);
             var activeDTCList = dtcHandler.parseDTCData(activeDTCData);
-            combinedHtml += dtcHandler.createDTCTableOnly(activeDTCList);
+            combinedHtml += dtcHandler.createResponsiveDTCTable(activeDTCList);
         } else {
             combinedHtml += me.createNoDTCMessage('No Active DTCs');
         }
         combinedHtml += '</div>';
         
         // Right column: Previous Active DTCs
-        combinedHtml += '<div style="flex: 1;">';
-        combinedHtml += '<h4 style="margin: 0 0 10px 0; color: #ff8c00; text-align: center;">';
-        combinedHtml += '<i class="fa fa-history"></i> Previous Active DTCs</h4>';
+        combinedHtml += '<div style="' +
+            'flex: 1 1 45%; ' +  // Flexible, minimum 45% width
+            'min-width: 300px; ' +  // Minimum width for readability
+            'max-width: calc(50% - 8px); ' +  // Maximum 50% minus gap
+            'box-sizing: border-box;' +
+            '">';
+        combinedHtml += '<h4 style="' +
+            'margin: 0 0 12px 0; ' +
+            'color: #ff8c00; ' +
+            'text-align: center; ' +
+            'font-size: 13px; ' +
+            'font-weight: bold; ' +
+            'padding: 8px; ' +
+            'border-bottom: 2px solid #ff8c00; ' +
+            'background: rgba(255, 140, 0, 0.05);' +
+            '">' +
+            '<i class="fa fa-history"></i> Previous Active DTCs</h4>';
         
         if (dtcSensors.previous) {
             var previousDTCData = me.extractDTCFromSensorValue(dtcSensors.previous);
             var previousDTCList = dtcHandler.parseDTCData(previousDTCData);
-            combinedHtml += dtcHandler.createDTCTableOnly(previousDTCList);
+            combinedHtml += dtcHandler.createResponsiveDTCTable(previousDTCList);
         } else {
-            combinedHtml += me.createNoDTCMessage('No Previous Active DTCs');
+            combinedHtml += me.createNoDTCMessage('No Previously Active DTCs');
         }
         combinedHtml += '</div>';
         
         combinedHtml += '</div>';
+        
+        // Add responsive CSS for smaller screens
+        combinedHtml += '<style>' +
+            '@media (max-width: 768px) {' +
+                '.dashpanel-dtc-container > div > div {' +
+                    'flex-direction: column !important;' +
+                    'max-width: none !important;' +
+                    'min-width: 100% !important;' +
+                '}' +
+            '}' +
+            '</style>';
+        
         return combinedHtml;
     },
 
@@ -564,14 +613,46 @@ Ext.define('Store.dashpanel.view.MainPanel', {
         
         console.log('🔄 MainPanel: Creating fallback combined DTC display');
         
-        var fallbackHtml = '<div style="display: flex; gap: 20px; padding: 10px;">';
+        // Responsive fallback container matching main layout
+        var fallbackHtml = '<div style="' +
+            'display: flex; ' +
+            'flex-wrap: wrap; ' +
+            'gap: 15px; ' +
+            'padding: 10px; ' +
+            'width: 100%; ' +
+            'box-sizing: border-box;' +
+            '">';
         
         // Left: Active DTCs
-        fallbackHtml += '<div style="flex: 1;">';
-        fallbackHtml += '<h4 style="margin: 0 0 10px 0; color: #d73027; text-align: center;">Active DTCs</h4>';
+        fallbackHtml += '<div style="' +
+            'flex: 1 1 45%; ' +
+            'min-width: 300px; ' +
+            'max-width: calc(50% - 8px); ' +
+            'box-sizing: border-box;' +
+            '">';
+        fallbackHtml += '<h4 style="' +
+            'margin: 0 0 12px 0; ' +
+            'color: #d73027; ' +
+            'text-align: center; ' +
+            'font-size: 13px; ' +
+            'font-weight: bold; ' +
+            'padding: 8px; ' +
+            'border-bottom: 2px solid #d73027; ' +
+            'background: rgba(215, 48, 39, 0.05);' +
+            '">' +
+            '<i class="fa fa-exclamation-triangle"></i> Active DTCs</h4>';
         if (dtcSensors.active) {
-            fallbackHtml += '<div style="background: #f9f9f9; padding: 10px; border: 1px solid #ddd; font-family: monospace; font-size: 11px;">';
-            fallbackHtml += 'Raw data: ' + dtcSensors.active.substring(0, 100) + '...';
+            fallbackHtml += '<div style="' +
+                'background: #f9f9f9; ' +
+                'padding: 15px; ' +
+                'border: 1px solid #ddd; ' +
+                'border-radius: 6px; ' +
+                'font-family: monospace; ' +
+                'font-size: 10px; ' +
+                'word-break: break-all; ' +
+                'overflow-wrap: break-word;' +
+                '">';
+            fallbackHtml += '<strong>Raw DTC Data:</strong><br>' + dtcSensors.active.substring(0, 150) + '...';
             fallbackHtml += '</div>';
         } else {
             fallbackHtml += me.createNoDTCMessage('No Active DTCs');
@@ -579,25 +660,71 @@ Ext.define('Store.dashpanel.view.MainPanel', {
         fallbackHtml += '</div>';
         
         // Right: Previous Active DTCs
-        fallbackHtml += '<div style="flex: 1;">';
-        fallbackHtml += '<h4 style="margin: 0 0 10px 0; color: #ff8c00; text-align: center;">Previous Active DTCs</h4>';
+        fallbackHtml += '<div style="' +
+            'flex: 1 1 45%; ' +
+            'min-width: 300px; ' +
+            'max-width: calc(50% - 8px); ' +
+            'box-sizing: border-box;' +
+            '">';
+        fallbackHtml += '<h4 style="' +
+            'margin: 0 0 12px 0; ' +
+            'color: #ff8c00; ' +
+            'text-align: center; ' +
+            'font-size: 13px; ' +
+            'font-weight: bold; ' +
+            'padding: 8px; ' +
+            'border-bottom: 2px solid #ff8c00; ' +
+            'background: rgba(255, 140, 0, 0.05);' +
+            '">' +
+            '<i class="fa fa-history"></i> Previous Active DTCs</h4>';
         if (dtcSensors.previous) {
-            fallbackHtml += '<div style="background: #f9f9f9; padding: 10px; border: 1px solid #ddd; font-family: monospace; font-size: 11px;">';
-            fallbackHtml += 'Raw data: ' + dtcSensors.previous.substring(0, 100) + '...';
+            fallbackHtml += '<div style="' +
+                'background: #f9f9f9; ' +
+                'padding: 15px; ' +
+                'border: 1px solid #ddd; ' +
+                'border-radius: 6px; ' +
+                'font-family: monospace; ' +
+                'font-size: 10px; ' +
+                'word-break: break-all; ' +
+                'overflow-wrap: break-word;' +
+                '">';
+            fallbackHtml += '<strong>Raw DTC Data:</strong><br>' + dtcSensors.previous.substring(0, 150) + '...';
             fallbackHtml += '</div>';
         } else {
-            fallbackHtml += me.createNoDTCMessage('No Previous Active DTCs');
+            fallbackHtml += me.createNoDTCMessage('No Previously Active DTCs');
         }
         fallbackHtml += '</div>';
         
         fallbackHtml += '</div>';
-        fallbackHtml += '<div style="margin-top: 10px; font-size: 10px; color: #666; text-align: center;">';
-        fallbackHtml += '<em>Note: DTCHandler not available. Showing raw DTC data.</em>';
+        
+        // Fallback notice
+        fallbackHtml += '<div style="' +
+            'margin-top: 15px; ' +
+            'padding: 10px; ' +
+            'font-size: 11px; ' +
+            'color: #666; ' +
+            'text-align: center; ' +
+            'background: #fff3cd; ' +
+            'border: 1px solid #ffeaa7; ' +
+            'border-radius: 4px;' +
+            '">';
+        fallbackHtml += '<i class="fa fa-info-circle"></i> <em>DTCHandler not available. Showing raw sensor data.</em>';
         fallbackHtml += '</div>';
+        
+        // Add responsive CSS for fallback too
+        fallbackHtml += '<style>' +
+            '@media (max-width: 768px) {' +
+                '.dashpanel-dtc-container > div > div {' +
+                    'flex-direction: column !important;' +
+                    'max-width: none !important;' +
+                    'min-width: 100% !important;' +
+                '}' +
+            '}' +
+            '</style>';
         
         sensorGroups['DTC'].push('<div class="dashpanel-dtc-container">' + fallbackHtml + '</div>');
         
-        console.log('✅ MainPanel: Fallback combined DTC display created');
+        console.log('✅ MainPanel: Responsive fallback combined DTC display created');
     },
 
     /**
