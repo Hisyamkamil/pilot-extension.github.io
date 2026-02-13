@@ -420,21 +420,25 @@ Ext.define('Store.dashpanel.view.MainPanel', {
      * Process DTC sensor with enhanced error handling and fallback processing
      * @param {Object} sensorGroups - Sensor groups object
      * @param {string} sensorValue - DTC sensor value
+     * @param {string} groupName - Original group name (defaults to 'Active DTC' for backward compatibility)
      */
-    processDTCSensor: function(sensorGroups, sensorValue) {
+    processDTCSensor: function(sensorGroups, sensorValue, groupName) {
         var me = this;
         
-        console.log('🔧 MainPanel: Processing DTC sensor data');
+        // Use original group name or default to 'Active DTC' for backward compatibility
+        var dtcGroupName = groupName || 'Active DTC';
+        
+        console.log('🔧 MainPanel: Processing DTC sensor data for group:', dtcGroupName);
         console.log('🔧 MainPanel: DTC sensor value:', sensorValue ? sensorValue.substring(0, 100) + '...' : 'Empty');
         
-        if (!sensorGroups['Active DTC']) {
-            sensorGroups['Active DTC'] = [];
+        if (!sensorGroups[dtcGroupName]) {
+            sensorGroups[dtcGroupName] = [];
         }
 
         // Validate input data
         if (!sensorValue || typeof sensorValue !== 'string') {
             console.warn('⚠️ MainPanel: Invalid DTC sensor value received');
-            sensorGroups['Active DTC'].push('<div style="text-align: center; padding: 20px; color: #ff8c00;">' +
+            sensorGroups[dtcGroupName].push('<div style="text-align: center; padding: 20px; color: #ff8c00;">' +
                                           '<i class="fa fa-exclamation-triangle"></i><br>' +
                                           'Invalid DTC sensor data</div>');
             return;
@@ -455,14 +459,14 @@ Ext.define('Store.dashpanel.view.MainPanel', {
                 var dtcList = dtcHandler.parseDTCData(sensorValue);
                 var dtcTableHtml = dtcHandler.createDTCTable(dtcList);
                 
-                sensorGroups['Active DTC'].push('<div class="dashpanel-dtc-container">' + dtcTableHtml + '</div>');
+                sensorGroups[dtcGroupName].push('<div class="dashpanel-dtc-container">' + dtcTableHtml + '</div>');
                 
                 var count = dtcList ? dtcList.length : 0;
-                console.log('✅ MainPanel: Successfully added', count, 'DTCs to display');
+                console.log('✅ MainPanel: Successfully added', count, 'DTCs to display in group:', dtcGroupName);
             } else {
                 // Fallback: Use simple DTC display without parsing
                 console.warn('⚠️ MainPanel: DTCHandler not available, using fallback display');
-                me.createFallbackDTCDisplay(sensorGroups, sensorValue);
+                me.createFallbackDTCDisplay(sensorGroups, sensorValue, dtcGroupName);
             }
             
         } catch (e) {
@@ -473,7 +477,7 @@ Ext.define('Store.dashpanel.view.MainPanel', {
             // Try fallback method on error
             try {
                 console.log('🔄 MainPanel: Attempting fallback DTC processing');
-                me.createFallbackDTCDisplay(sensorGroups, sensorValue);
+                me.createFallbackDTCDisplay(sensorGroups, sensorValue, dtcGroupName);
             } catch (fallbackError) {
                 console.error('❌ MainPanel: Fallback also failed:', fallbackError.message);
                 
@@ -482,7 +486,7 @@ Ext.define('Store.dashpanel.view.MainPanel', {
                     errorMessage += ': ' + e.message;
                 }
                 
-                sensorGroups['Active DTC'].push('<div style="text-align: center; padding: 20px; color: #d73027;">' +
+                sensorGroups[dtcGroupName].push('<div style="text-align: center; padding: 20px; color: #d73027;">' +
                                               '<i class="fa fa-exclamation-triangle"></i><br>' +
                                               '<strong>DTC Processing Error</strong><br>' +
                                               '<small>' + errorMessage + '</small><br>' +
@@ -521,11 +525,14 @@ Ext.define('Store.dashpanel.view.MainPanel', {
      * Create fallback DTC display when DTCHandler is not available
      * @param {Object} sensorGroups - Sensor groups object
      * @param {string} sensorValue - Raw DTC sensor value
+     * @param {string} groupName - DTC group name (defaults to 'Active DTC')
      */
-    createFallbackDTCDisplay: function(sensorGroups, sensorValue) {
+    createFallbackDTCDisplay: function(sensorGroups, sensorValue, groupName) {
         var me = this;
         
-        console.log('🔄 MainPanel: Creating fallback DTC display');
+        var dtcGroupName = groupName || 'Active DTC';
+        
+        console.log('🔄 MainPanel: Creating fallback DTC display for group:', dtcGroupName);
         
         // Simple parsing of DTC entries (basic fallback)
         var dtcEntries = sensorValue.split(';');
@@ -566,9 +573,9 @@ Ext.define('Store.dashpanel.view.MainPanel', {
                           '</div>';
         }
         
-        sensorGroups['Active DTC'].push('<div class="dashpanel-dtc-container">' + fallbackHtml + '</div>');
+        sensorGroups[dtcGroupName].push('<div class="dashpanel-dtc-container">' + fallbackHtml + '</div>');
         
-        console.log('✅ MainPanel: Fallback DTC display created with', validEntries.length, 'entries');
+        console.log('✅ MainPanel: Fallback DTC display created with', validEntries.length, 'entries for group:', dtcGroupName);
     },
 
     /**
@@ -590,7 +597,7 @@ Ext.define('Store.dashpanel.view.MainPanel', {
             // Check if sensor belongs to DTC group
             if (groupName.toLowerCase() === 'dtc') {
                 console.log('🔍 MainPanel: Sensor with DTC group detected:', sensorName);
-                me.processDTCSensor(sensorGroups, sensorValue);
+                me.processDTCSensor(sensorGroups, sensorValue, groupName); // Pass original group name
                 return; // Exit early for DTC sensors
             }
             
