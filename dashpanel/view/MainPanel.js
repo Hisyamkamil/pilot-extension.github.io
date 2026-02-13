@@ -1333,8 +1333,11 @@ Ext.define('Store.dashpanel.view.MainPanel', {
     containsDTCTable: function(sensorRows) {
         var containsDTC = false;
         Ext.each(sensorRows, function(row) {
-            if (row.indexOf('Active Diagnostic Trouble Codes') > -1 || 
-                row.indexOf('No Active DTCs') > -1) {
+            if (row.indexOf('Active Diagnostic Trouble Codes') > -1 ||
+                row.indexOf('No Active DTCs') > -1 ||
+                row.indexOf('dashpanel-dtc-container') > -1 ||
+                row.indexOf('Active DTCs</h4>') > -1 ||
+                row.indexOf('Previous Active DTCs</h4>') > -1) {
                 containsDTC = true;
                 return false;
             }
