@@ -2,6 +2,11 @@ Ext.define('Store.dashpanel.view.MainPanel', {
     extend: 'Ext.panel.Panel',
     alias: 'widget.dashpanel.mainpanel',
     
+    // Ensure DTCHandler is loaded as a dependency
+    requires: [
+        'Store.dashpanel.view.DTCHandler'
+    ],
+    
     // Configuration properties
     config: null,
     refreshTask: null,
@@ -412,7 +417,7 @@ Ext.define('Store.dashpanel.view.MainPanel', {
     },
 
     /**
-     * Process DTC sensor with enhanced error handling and logging
+     * Process DTC sensor with enhanced error handling and fallback processing
      * @param {Object} sensorGroups - Sensor groups object
      * @param {string} sensorValue - DTC sensor value
      */
@@ -436,60 +441,134 @@ Ext.define('Store.dashpanel.view.MainPanel', {
         }
 
         try {
-            // Ensure DTCHandler class is loaded and get singleton instance
-            var dtcHandler = null;
+            // Debug: Check what's available in the namespace
+            console.log('🔍 MainPanel: Debugging namespace availability:');
+            console.log('🔍 MainPanel: window.Store exists:', !!(window.Store));
+            console.log('🔍 MainPanel: Store exists:', !!(typeof Store !== 'undefined'));
+            console.log('🔍 MainPanel: Ext.ClassManager exists:', !!(Ext.ClassManager));
             
-            // Method 1: Direct singleton access
-            if (Store && Store.dashpanel && Store.dashpanel.view && Store.dashpanel.view.DTCHandler) {
-                dtcHandler = Store.dashpanel.view.DTCHandler;
-                console.log('🔍 MainPanel: DTCHandler found via direct access');
+            var dtcHandler = me.getDTCHandlerInstance();
+            
+            if (dtcHandler) {
+                console.log('🔍 MainPanel: Processing DTC data with DTCHandler, sensor value length:', sensorValue.length);
+                
+                var dtcList = dtcHandler.parseDTCData(sensorValue);
+                var dtcTableHtml = dtcHandler.createDTCTable(dtcList);
+                
+                sensorGroups['Active DTC'].push('<div class="dashpanel-dtc-container">' + dtcTableHtml + '</div>');
+                
+                var count = dtcList ? dtcList.length : 0;
+                console.log('✅ MainPanel: Successfully added', count, 'DTCs to display');
+            } else {
+                // Fallback: Use simple DTC display without parsing
+                console.warn('⚠️ MainPanel: DTCHandler not available, using fallback display');
+                me.createFallbackDTCDisplay(sensorGroups, sensorValue);
             }
-            
-            // Method 2: Try getting from global window scope
-            if (!dtcHandler && window.Store && window.Store.dashpanel && window.Store.dashpanel.view && window.Store.dashpanel.view.DTCHandler) {
-                dtcHandler = window.Store.dashpanel.view.DTCHandler;
-                console.log('🔍 MainPanel: DTCHandler found via window scope');
-            }
-            
-            // Method 3: Try ExtJS class manager
-            if (!dtcHandler) {
-                var DTCHandlerClass = Ext.ClassManager.get('Store.dashpanel.view.DTCHandler');
-                if (DTCHandlerClass) {
-                    dtcHandler = DTCHandlerClass;
-                    console.log('🔍 MainPanel: DTCHandler found via ClassManager');
-                }
-            }
-            
-            if (!dtcHandler) {
-                throw new Error('DTCHandler singleton not available. Ensure DTCHandler.js is loaded before MainPanel.js');
-            }
-            
-            console.log('🔍 MainPanel: Processing DTC data with sensor value length:', sensorValue.length);
-            
-            var dtcList = dtcHandler.parseDTCData(sensorValue);
-            var dtcTableHtml = dtcHandler.createDTCTable(dtcList);
-            
-            sensorGroups['Active DTC'].push('<div class="dashpanel-dtc-container">' + dtcTableHtml + '</div>');
-            
-            var count = dtcList ? dtcList.length : 0;
-            console.log('✅ MainPanel: Successfully added', count, 'DTCs to display');
             
         } catch (e) {
             console.error('❌ MainPanel: Error processing DTC data');
             console.error('❌ MainPanel: Error details:', e.message);
             console.error('❌ MainPanel: Stack trace:', e.stack);
             
-            // Provide detailed error information
-            var errorMessage = 'Error parsing DTC data';
-            if (e.message) {
-                errorMessage += ': ' + e.message;
+            // Try fallback method on error
+            try {
+                console.log('🔄 MainPanel: Attempting fallback DTC processing');
+                me.createFallbackDTCDisplay(sensorGroups, sensorValue);
+            } catch (fallbackError) {
+                console.error('❌ MainPanel: Fallback also failed:', fallbackError.message);
+                
+                var errorMessage = 'DTCHandler unavailable and fallback failed';
+                if (e.message) {
+                    errorMessage += ': ' + e.message;
+                }
+                
+                sensorGroups['Active DTC'].push('<div style="text-align: center; padding: 20px; color: #d73027;">' +
+                                              '<i class="fa fa-exclamation-triangle"></i><br>' +
+                                              '<strong>DTC Processing Error</strong><br>' +
+                                              '<small>' + errorMessage + '</small><br>' +
+                                              '<small>Raw sensor value: ' + (sensorValue ? sensorValue.substring(0, 50) + '...' : 'None') + '</small></div>');
             }
-            
-            sensorGroups['Active DTC'].push('<div style="text-align: center; padding: 20px; color: #d73027;">' +
-                                          '<i class="fa fa-exclamation-triangle"></i><br>' +
-                                          '<strong>DTC Processing Error</strong><br>' +
-                                          '<small>' + errorMessage + '</small></div>');
         }
+    },
+
+    /**
+     * Get DTCHandler singleton instance (should be loaded via requires)
+     * @returns {Object|null} DTCHandler instance or null
+     */
+    getDTCHandlerInstance: function() {
+        // Since DTCHandler is declared in requires, it should be available via Store namespace
+        if (Store && Store.dashpanel && Store.dashpanel.view && Store.dashpanel.view.DTCHandler) {
+            console.log('🔍 MainPanel: DTCHandler singleton loaded via requires');
+            return Store.dashpanel.view.DTCHandler;
+        }
+        
+        // Fallback: Try ExtJS class manager
+        try {
+            var DTCHandlerClass = Ext.ClassManager.get('Store.dashpanel.view.DTCHandler');
+            if (DTCHandlerClass) {
+                console.log('🔍 MainPanel: DTCHandler found via ClassManager');
+                return DTCHandlerClass;
+            }
+        } catch (e) {
+            console.warn('MainPanel: ClassManager lookup failed:', e.message);
+        }
+        
+        console.error('❌ MainPanel: DTCHandler not available. Check if DTCHandler.js file exists and is properly loaded.');
+        return null;
+    },
+
+    /**
+     * Create fallback DTC display when DTCHandler is not available
+     * @param {Object} sensorGroups - Sensor groups object
+     * @param {string} sensorValue - Raw DTC sensor value
+     */
+    createFallbackDTCDisplay: function(sensorGroups, sensorValue) {
+        var me = this;
+        
+        console.log('🔄 MainPanel: Creating fallback DTC display');
+        
+        // Simple parsing of DTC entries (basic fallback)
+        var dtcEntries = sensorValue.split(';');
+        var validEntries = [];
+        
+        Ext.each(dtcEntries, function(entry) {
+            if (entry && entry.trim().length > 0) {
+                validEntries.push(entry.trim());
+            }
+        });
+        
+        var fallbackHtml = '';
+        
+        if (validEntries.length > 0) {
+            fallbackHtml = '<div style="padding: 10px;">' +
+                          '<h4 style="margin: 0 0 10px 0; color: #d73027;">' +
+                          '<i class="fa fa-exclamation-triangle"></i> ' +
+                          'Active Diagnostic Trouble Codes (' + validEntries.length + ')' +
+                          '</h4>' +
+                          '<div style="background: #f9f9f9; padding: 10px; border: 1px solid #ddd; font-family: monospace; font-size: 11px;">';
+            
+            Ext.each(validEntries, function(entry, index) {
+                fallbackHtml += '<div style="margin: 3px 0;">' +
+                               '<strong>DTC ' + (index + 1) + ':</strong> ' + entry +
+                               '</div>';
+            });
+            
+            fallbackHtml += '</div>' +
+                           '<div style="margin-top: 10px; font-size: 10px; color: #666;">' +
+                           '<em>Note: DTCHandler not available. Showing raw DTC data.</em>' +
+                           '</div></div>';
+        } else {
+            // No DTCs
+            fallbackHtml = '<div style="text-align: center; padding: 20px; color: #666;">' +
+                          '<i class="fa fa-check-circle" style="font-size: 24px; color: #00a65a;"></i>' +
+                          '<h4 style="margin: 10px 0;">No Active DTCs</h4>' +
+                          '<p>All systems operating normally</p>' +
+                          '</div>';
+        }
+        
+        sensorGroups['Active DTC'].push('<div class="dashpanel-dtc-container">' + fallbackHtml + '</div>');
+        
+        console.log('✅ MainPanel: Fallback DTC display created with', validEntries.length, 'entries');
     },
 
     /**
