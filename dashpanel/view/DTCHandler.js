@@ -234,9 +234,10 @@ Ext.define('Store.dashpanel.view.DTCHandler', {
     /**
      * Create responsive DTC table for combined displays
      * @param {Array} dtcList - Array of DTC objects
+     * @param {string} emptyMessage - Custom message when no DTCs found
      * @returns {string} Responsive HTML table
      */
-    createResponsiveDTCTable: function(dtcList) {
+    createResponsiveDTCTable: function(dtcList, emptyMessage) {
         if (!dtcList || dtcList.length === 0) {
             return '<div style="' +
                    'text-align: center; ' +
@@ -248,7 +249,7 @@ Ext.define('Store.dashpanel.view.DTCHandler', {
                    'margin: 5px 0;' +
                    '">' +
                    '<i class="fa fa-check-circle" style="font-size: 24px; color: #00a65a; margin-bottom: 8px;"></i>' +
-                   '<div style="font-size: 13px; font-weight: 500;">No DTCs found</div>' +
+                   '<div style="font-size: 13px; font-weight: 500;">' + emptyMessage + '</div>' +
                    '</div>';
         }
         
