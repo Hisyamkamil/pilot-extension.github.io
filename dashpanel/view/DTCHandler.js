@@ -14,6 +14,12 @@ Ext.define('Store.dashpanel.view.DTCHandler', {
             return dtcList;
         }
         
+        // Handle single "0" case when no DTCs are present
+        if (sensorValue.trim() === '0') {
+            console.log('DTCHandler: No DTCs present (sensor value is "0")');
+            return dtcList; // Return empty array
+        }
+        
         var dtcEntries = sensorValue.split(';');
         console.log('Parsing', dtcEntries.length, 'DTC entries...');
         
@@ -47,6 +53,12 @@ Ext.define('Store.dashpanel.view.DTCHandler', {
     parseSingleDTC: function(dtcEntry) {
         if (!dtcEntry) return null;
         
+        // Handle "0" case when no DTCs are present
+        if (dtcEntry.trim() === '0') {
+            console.log('DTCHandler: No DTCs present (received "0")');
+            return null;
+        }
+        
         var parts = dtcEntry.split(':');
         if (parts.length < 2) {
             console.warn('Invalid DTC format:', dtcEntry);
@@ -55,6 +67,12 @@ Ext.define('Store.dashpanel.view.DTCHandler', {
         
         var hexMessage = parts[0];
         var mcuSource = parts[1];
+        
+        // Handle "0" in hex message part too
+        if (hexMessage.trim() === '0') {
+            console.log('DTCHandler: No DTCs in hex message (received "0")');
+            return null;
+        }
         
         if (!this.isValidHexMessage(hexMessage)) {
             console.warn('Invalid DTC hex format:', hexMessage);
